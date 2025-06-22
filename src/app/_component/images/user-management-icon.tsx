@@ -1,16 +1,15 @@
 "use client";
 import React, { useState } from "react";
 
-interface SettingsIconProps extends React.SVGProps<SVGSVGElement> {
+interface UserManagementIconProps extends React.SVGProps<SVGSVGElement> {
   title?: string;
 }
 
-const SettingsIcon: React.FC<SettingsIconProps> = ({
-  title = "Settings",
+const UserManagementIcon: React.FC<UserManagementIconProps> = ({
+  title = "User Management",
   ...props
 }) => {
   const [hovered, setHovered] = useState(false);
-  const [rotating, setRotating] = useState(false);
 
   return (
     <div
@@ -19,14 +18,8 @@ const SettingsIcon: React.FC<SettingsIconProps> = ({
         display: "inline-flex",
         cursor: "pointer",
       }}
-      onMouseEnter={() => {
-        setHovered(true);
-        setRotating(true);
-      }}
-      onMouseLeave={() => {
-        setHovered(false);
-        setRotating(false);
-      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       <svg
         width={32}
@@ -40,24 +33,23 @@ const SettingsIcon: React.FC<SettingsIconProps> = ({
         }}
         {...props}
       >
-        {/* Gray background */}
-        <rect width="32" height="32" rx="8" fill="#6B7280" />
+        <rect width="32" height="32" rx="8" fill="#7C3AED" /> {/* Purple background */}
         
-        {/* Gear icon with rotation animation */}
-        <g
-          style={{
-            transformOrigin: "center",
-            animation: rotating ? "spin 2s linear infinite" : "none",
-          }}
-        >
-          <circle cx="16" cy="16" r="4" fill="white" />
-          <path
-            d="M16 8V5M16 27v-3M24 16h3M5 16h3M20.5 20.5l2.5 2.5M9 9l2.5 2.5M20.5 11.5l2.5-2.5M9 23l2.5-2.5"
-            stroke="white"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-        </g>
+        {/* User group silhouette */}
+        <path
+          d="M11 20C11 17.7909 12.7909 16 15 16H17C19.2091 16 21 17.7909 21 20V21H11V20Z"
+          fill="white"
+        />
+        <circle cx="16" cy="12" r="3" fill="white" />
+        
+        {/* Gear/settings icon */}
+        <path
+          d="M22 19L24 17M24 17L26 15M24 17L26 19M24 17L22 15"
+          stroke="white"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+        <circle cx="24" cy="17" r="1" fill="white" />
       </svg>
       
       <p 
@@ -91,15 +83,8 @@ const SettingsIcon: React.FC<SettingsIconProps> = ({
           {title}
         </span>
       )}
-
-      <style jsx>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 };
 
-export default SettingsIcon;
+export default UserManagementIcon;

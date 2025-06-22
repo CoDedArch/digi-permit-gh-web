@@ -1,16 +1,15 @@
 "use client";
 import React, { useState } from "react";
 
-interface SettingsIconProps extends React.SVGProps<SVGSVGElement> {
+interface ReviewQueueIconProps extends React.SVGProps<SVGSVGElement> {
   title?: string;
 }
 
-const SettingsIcon: React.FC<SettingsIconProps> = ({
-  title = "Settings",
+const ReviewQueueIcon: React.FC<ReviewQueueIconProps> = ({
+  title = "Review Queue",
   ...props
 }) => {
   const [hovered, setHovered] = useState(false);
-  const [rotating, setRotating] = useState(false);
 
   return (
     <div
@@ -19,14 +18,8 @@ const SettingsIcon: React.FC<SettingsIconProps> = ({
         display: "inline-flex",
         cursor: "pointer",
       }}
-      onMouseEnter={() => {
-        setHovered(true);
-        setRotating(true);
-      }}
-      onMouseLeave={() => {
-        setHovered(false);
-        setRotating(false);
-      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       <svg
         width={32}
@@ -40,24 +33,22 @@ const SettingsIcon: React.FC<SettingsIconProps> = ({
         }}
         {...props}
       >
-        {/* Gray background */}
-        <rect width="32" height="32" rx="8" fill="#6B7280" />
+        {/* Teal background */}
+        <rect width="32" height="32" rx="8" fill="#0D9488" />
         
-        {/* Gear icon with rotation animation */}
-        <g
-          style={{
-            transformOrigin: "center",
-            animation: rotating ? "spin 2s linear infinite" : "none",
-          }}
-        >
-          <circle cx="16" cy="16" r="4" fill="white" />
-          <path
-            d="M16 8V5M16 27v-3M24 16h3M5 16h3M20.5 20.5l2.5 2.5M9 9l2.5 2.5M20.5 11.5l2.5-2.5M9 23l2.5-2.5"
-            stroke="white"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-        </g>
+        {/* Stacked documents */}
+        <rect x="10" y="10" width="12" height="14" rx="1" fill="white" />
+        <rect x="12" y="8" width="12" height="14" rx="1" fill="white" fillOpacity="0.8" />
+        <rect x="14" y="6" width="12" height="14" rx="1" fill="white" fillOpacity="0.6" />
+        
+        {/* Progress indicator lines */}
+        <path d="M13 13H19" stroke="#0D9488" strokeWidth="1.5" />
+        <path d="M13 16H21" stroke="#0D9488" strokeWidth="1.5" />
+        <path d="M13 19H17" stroke="#0D9488" strokeWidth="1.5" />
+        
+        {/* Clock icon for queue status */}
+        <circle cx="24" cy="20" r="4" fill="white" />
+        <path d="M24 18V20H22" stroke="#0D9488" strokeWidth="1.5" strokeLinecap="round" />
       </svg>
       
       <p 
@@ -91,15 +82,8 @@ const SettingsIcon: React.FC<SettingsIconProps> = ({
           {title}
         </span>
       )}
-
-      <style jsx>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 };
 
-export default SettingsIcon;
+export default ReviewQueueIcon;

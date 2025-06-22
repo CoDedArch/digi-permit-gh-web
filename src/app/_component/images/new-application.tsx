@@ -1,16 +1,15 @@
 "use client";
 import React, { useState } from "react";
 
-interface SettingsIconProps extends React.SVGProps<SVGSVGElement> {
+interface NewApplicationIconProps extends React.SVGProps<SVGSVGElement> {
   title?: string;
 }
 
-const SettingsIcon: React.FC<SettingsIconProps> = ({
-  title = "Settings",
+const NewApplicationIcon: React.FC<NewApplicationIconProps> = ({
+  title = "New Application",
   ...props
 }) => {
   const [hovered, setHovered] = useState(false);
-  const [rotating, setRotating] = useState(false);
 
   return (
     <div
@@ -19,14 +18,8 @@ const SettingsIcon: React.FC<SettingsIconProps> = ({
         display: "inline-flex",
         cursor: "pointer",
       }}
-      onMouseEnter={() => {
-        setHovered(true);
-        setRotating(true);
-      }}
-      onMouseLeave={() => {
-        setHovered(false);
-        setRotating(false);
-      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       <svg
         width={32}
@@ -40,26 +33,20 @@ const SettingsIcon: React.FC<SettingsIconProps> = ({
         }}
         {...props}
       >
-        {/* Gray background */}
-        <rect width="32" height="32" rx="8" fill="#6B7280" />
-        
-        {/* Gear icon with rotation animation */}
-        <g
-          style={{
-            transformOrigin: "center",
-            animation: rotating ? "spin 2s linear infinite" : "none",
-          }}
-        >
-          <circle cx="16" cy="16" r="4" fill="white" />
-          <path
-            d="M16 8V5M16 27v-3M24 16h3M5 16h3M20.5 20.5l2.5 2.5M9 9l2.5 2.5M20.5 11.5l2.5-2.5M9 23l2.5-2.5"
-            stroke="white"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-        </g>
+        <rect width="32" height="32" rx="8" fill="#10B981" />
+        <path
+          d="M16 10V22M10 16H22"
+          stroke="#fff"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+        <path
+          d="M10 12H22V20H10V12Z"
+          stroke="#fff"
+          strokeWidth="1.5"
+          fill="none"
+        />
       </svg>
-      
       <p 
         className="whitespace-nowrap"
         style={{
@@ -70,7 +57,6 @@ const SettingsIcon: React.FC<SettingsIconProps> = ({
       >
         {title}
       </p>
-      
       {hovered && (
         <span
           className="bg-gray-900 text-white"
@@ -91,15 +77,8 @@ const SettingsIcon: React.FC<SettingsIconProps> = ({
           {title}
         </span>
       )}
-
-      <style jsx>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 };
 
-export default SettingsIcon;
+export default NewApplicationIcon;

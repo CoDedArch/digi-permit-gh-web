@@ -1,16 +1,15 @@
 "use client";
 import React, { useState } from "react";
 
-interface SettingsIconProps extends React.SVGProps<SVGSVGElement> {
+interface ExceptionsIconProps extends React.SVGProps<SVGSVGElement> {
   title?: string;
 }
 
-const SettingsIcon: React.FC<SettingsIconProps> = ({
-  title = "Settings",
+const ExceptionsIcon: React.FC<ExceptionsIconProps> = ({
+  title = "Exceptions",
   ...props
 }) => {
   const [hovered, setHovered] = useState(false);
-  const [rotating, setRotating] = useState(false);
 
   return (
     <div
@@ -19,14 +18,8 @@ const SettingsIcon: React.FC<SettingsIconProps> = ({
         display: "inline-flex",
         cursor: "pointer",
       }}
-      onMouseEnter={() => {
-        setHovered(true);
-        setRotating(true);
-      }}
-      onMouseLeave={() => {
-        setHovered(false);
-        setRotating(false);
-      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       <svg
         width={32}
@@ -40,24 +33,29 @@ const SettingsIcon: React.FC<SettingsIconProps> = ({
         }}
         {...props}
       >
-        {/* Gray background */}
-        <rect width="32" height="32" rx="8" fill="#6B7280" />
+        {/* Red background for alert/exception */}
+        <rect width="32" height="32" rx="8" fill="#DC2626" />
         
-        {/* Gear icon with rotation animation */}
-        <g
-          style={{
-            transformOrigin: "center",
-            animation: rotating ? "spin 2s linear infinite" : "none",
-          }}
-        >
-          <circle cx="16" cy="16" r="4" fill="white" />
-          <path
-            d="M16 8V5M16 27v-3M24 16h3M5 16h3M20.5 20.5l2.5 2.5M9 9l2.5 2.5M20.5 11.5l2.5-2.5M9 23l2.5-2.5"
-            stroke="white"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-        </g>
+        {/* Warning triangle */}
+        <path 
+          d="M16 9L22 21H10L16 9Z" 
+          fill="white" 
+          stroke="white" 
+          strokeWidth="1.5"
+        />
+        
+        {/* Exclamation mark */}
+        <rect x="15" y="14" width="2" height="6" rx="1" fill="#DC2626" />
+        <circle cx="16" cy="22" r="1" fill="#DC2626" />
+        
+        {/* Document with X symbol */}
+        <rect x="20" y="12" width="8" height="10" rx="1" fill="white" />
+        <path 
+          d="M22 14L26 18M26 14L22 18" 
+          stroke="#DC2626" 
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
       </svg>
       
       <p 
@@ -91,15 +89,8 @@ const SettingsIcon: React.FC<SettingsIconProps> = ({
           {title}
         </span>
       )}
-
-      <style jsx>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 };
 
-export default SettingsIcon;
+export default ExceptionsIcon;

@@ -1,21 +1,18 @@
 "use client";
 import React, { useState } from "react";
 
-interface DiscoverIconProps extends React.SVGProps<SVGSVGElement> {
+interface HomeLogoProps extends React.SVGProps<SVGSVGElement> {
   title?: string;
 }
 
-const DiscoverIcon: React.FC<DiscoverIconProps> = ({
-  title = "Discover",
-  ...props
-}) => {
+const MyApplicationsIcon: React.FC<HomeLogoProps> = ({ title = "My Applications", ...props }) => {
   const [hovered, setHovered] = useState(false);
 
   return (
     <div
+      className="flex items-center gap-2 relative "
       style={{
-        display: "inline-block",
-        position: "relative",
+        display: "inline-flex",
         cursor: "pointer",
       }}
       onMouseEnter={() => setHovered(true)}
@@ -24,47 +21,47 @@ const DiscoverIcon: React.FC<DiscoverIconProps> = ({
       <svg
         width={32}
         height={32}
-        viewBox="0 0 32 32"
+        viewBox="0 0 48 48"
         fill="none"
         style={{
           transition: "transform 0.3s cubic-bezier(.4,2,.6,1)",
           transform: hovered ? "translateX(20px)" : "translateX(0)",
-          display: "block",
+          flexShrink: 0,
         }}
         {...props}
       >
-        <circle
-          cx="16"
-          cy="16"
-          r="15"
-          stroke="#1A73E8"
-          strokeWidth="2"
-          fill="#E3F2FD"
+        <rect width="48" height="48" rx="12" fill="#2563EB" />
+        <path
+          d="M14 16H34V36H14V16Z"
+          stroke="#fff"
+          strokeWidth={2}
+          strokeLinejoin="round"
         />
-        <g>
-          <polygon
-            points="21,11 14,13 11,21 18,19"
-            fill="#1A73E8"
-            stroke="#1565C0"
-            strokeWidth="1"
-            strokeLinejoin="round"
-          />
-          <circle
-            cx="16"
-            cy="16"
-            r="2"
-            fill="#fff"
-            stroke="#1A73E8"
-            strokeWidth="1"
-          />
-        </g>
+        <path
+          d="M18 16V12H30V16"
+          stroke="#fff"
+          strokeWidth={2}
+          strokeLinejoin="round"
+        />
+        <rect x="20" y="22" width="8" height="4" rx="1" fill="#fff" />
+        <rect x="20" y="30" width="8" height="4" rx="1" fill="#fff" />
       </svg>
+      <p 
+        className="whitespace-nowrap"
+        style={{
+          transition: "opacity 0.2s ease",
+          opacity: hovered ? 0 : 1,
+          pointerEvents: "none",
+        }}
+      >
+        {title}
+      </p>
       {hovered && (
         <span
           className="bg-gray-900 text-white"
           style={{
             position: "absolute",
-            left: "110%",
+            left: "calc(100% + 8px)",
             top: "50%",
             transform: "translateY(-50%)",
             padding: "4px 12px",
@@ -83,4 +80,4 @@ const DiscoverIcon: React.FC<DiscoverIconProps> = ({
   );
 };
 
-export default DiscoverIcon;
+export default MyApplicationsIcon;

@@ -1,16 +1,15 @@
 "use client";
 import React, { useState } from "react";
 
-interface SettingsIconProps extends React.SVGProps<SVGSVGElement> {
+interface InspectionsIconProps extends React.SVGProps<SVGSVGElement> {
   title?: string;
 }
 
-const SettingsIcon: React.FC<SettingsIconProps> = ({
-  title = "Settings",
+const InspectionsIcon: React.FC<InspectionsIconProps> = ({
+  title = "Inspections",
   ...props
 }) => {
   const [hovered, setHovered] = useState(false);
-  const [rotating, setRotating] = useState(false);
 
   return (
     <div
@@ -19,14 +18,8 @@ const SettingsIcon: React.FC<SettingsIconProps> = ({
         display: "inline-flex",
         cursor: "pointer",
       }}
-      onMouseEnter={() => {
-        setHovered(true);
-        setRotating(true);
-      }}
-      onMouseLeave={() => {
-        setHovered(false);
-        setRotating(false);
-      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       <svg
         width={32}
@@ -40,24 +33,23 @@ const SettingsIcon: React.FC<SettingsIconProps> = ({
         }}
         {...props}
       >
-        {/* Gray background */}
-        <rect width="32" height="32" rx="8" fill="#6B7280" />
+        {/* Orange background */}
+        <rect width="32" height="32" rx="8" fill="#F97316" />
         
-        {/* Gear icon with rotation animation */}
-        <g
-          style={{
-            transformOrigin: "center",
-            animation: rotating ? "spin 2s linear infinite" : "none",
-          }}
-        >
-          <circle cx="16" cy="16" r="4" fill="white" />
-          <path
-            d="M16 8V5M16 27v-3M24 16h3M5 16h3M20.5 20.5l2.5 2.5M9 9l2.5 2.5M20.5 11.5l2.5-2.5M9 23l2.5-2.5"
-            stroke="white"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-        </g>
+        {/* Clipboard with checklist */}
+        <rect x="10" y="8" width="12" height="16" rx="2" fill="white" />
+        <path d="M10 12H22" stroke="#F97316" strokeWidth="1.5" />
+        <path d="M10 15H22" stroke="#F97316" strokeWidth="1.5" />
+        <path d="M10 18H22" stroke="#F97316" strokeWidth="1.5" />
+        <path d="M10 21H22" stroke="#F97316" strokeWidth="1.5" />
+        
+        {/* Checkmark symbols */}
+        <path d="M12 15L14 17L18 13" stroke="#F97316" strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M12 18L14 20L18 16" stroke="#F97316" strokeWidth="1.5" strokeLinecap="round" />
+        
+        {/* Officer badge */}
+        <circle cx="24" cy="12" r="3" fill="white" />
+        <path d="M24 15V20M22 18H26" stroke="#F97316" strokeWidth="1.5" />
       </svg>
       
       <p 
@@ -91,15 +83,8 @@ const SettingsIcon: React.FC<SettingsIconProps> = ({
           {title}
         </span>
       )}
-
-      <style jsx>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 };
 
-export default SettingsIcon;
+export default InspectionsIcon;

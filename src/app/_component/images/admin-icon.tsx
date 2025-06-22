@@ -1,14 +1,12 @@
 "use client";
 import React, { useState } from "react";
 
-interface NotificationIconProps extends React.SVGProps<SVGSVGElement> {
+interface AdminIconProps extends React.SVGProps<SVGSVGElement> {
   title?: string;
-  hasNotification?: boolean; // New prop for notification indicator
 }
 
-const NotificationIcon: React.FC<NotificationIconProps> = ({
-  title = "Notifications",
-  hasNotification = false,
+const AdminIcon: React.FC<AdminIconProps> = ({
+  title = "Admin",
   ...props
 }) => {
   const [hovered, setHovered] = useState(false);
@@ -35,39 +33,22 @@ const NotificationIcon: React.FC<NotificationIconProps> = ({
         }}
         {...props}
       >
-        <rect width="32" height="32" rx="8" fill="#7C3AED" /> {/* Purple background */}
-        
-        {/* Bell body */}
+        <rect width="32" height="32" rx="8" fill="#6B7280" />
         <path
-          d="M22 16C22 12 20 10 16 10C12 10 10 12 10 16C10 20 9 21 9 21H23C23 21 22 20 22 16Z"
+          d="M16 10C19.3137 10 22 12.6863 22 16V22H10V16C10 12.6863 12.6863 10 16 10Z"
           stroke="#fff"
           strokeWidth="1.5"
           fill="none"
         />
-        
-        {/* Bell clapper */}
         <path
-          d="M16 21V23"
+          d="M16 10V8M16 8V6M16 8H14M16 8H18"
           stroke="#fff"
           strokeWidth="1.5"
           strokeLinecap="round"
         />
-        <circle
-          cx="16"
-          cy="8"
-          r="1.5"
-          fill="#fff"
-        />
-        
-        {/* Notification indicator */}
-        {hasNotification && (
-          <circle
-            cx="22"
-            cy="10"
-            r="3"
-            fill="#EF4444" /* Red dot for notifications */
-          />
-        )}
+        <rect x="12" y="20" width="8" height="4" rx="1" fill="#fff" />
+        <rect x="12" y="14" width="2" height="2" rx="1" fill="#fff" />
+        <rect x="18" y="14" width="2" height="2" rx="1" fill="#fff" />
       </svg>
       {hovered && (
         <span
@@ -93,4 +74,4 @@ const NotificationIcon: React.FC<NotificationIconProps> = ({
   );
 };
 
-export default NotificationIcon;
+export default AdminIcon;

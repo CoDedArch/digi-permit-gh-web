@@ -1,12 +1,12 @@
 "use client";
 import React, { useState } from "react";
 
-interface InfoIconProps extends React.SVGProps<SVGSVGElement> {
+interface SiteVisitsIconProps extends React.SVGProps<SVGSVGElement> {
   title?: string;
 }
 
-const InfoIcon: React.FC<InfoIconProps> = ({
-  title = "Information",
+const SiteVisitsIcon: React.FC<SiteVisitsIconProps> = ({
+  title = "Site Visits",
   ...props
 }) => {
   const [hovered, setHovered] = useState(false);
@@ -33,40 +33,40 @@ const InfoIcon: React.FC<InfoIconProps> = ({
         }}
         {...props}
       >
-        {/* Blue background */}
-        <rect width="32" height="32" rx="8" fill="#3B82F6" />
+        {/* Green background */}
+        <rect width="32" height="32" rx="8" fill="#10B981" />
         
-        {/* Info circle */}
-        <circle cx="16" cy="16" r="10" stroke="white" strokeWidth="2" fill="none" />
+        {/* Building icon */}
+        <rect x="12" y="14" width="8" height="10" fill="white" />
+        <rect x="14" y="16" width="1" height="2" fill="#10B981" />
+        <rect x="17" y="16" width="1" height="2" fill="#10B981" />
+        <rect x="14" y="20" width="1" height="2" fill="#10B981" />
+        <rect x="17" y="20" width="1" height="2" fill="#10B981" />
         
-        {/* Info i-dot */}
+        {/* Map pin with pulse waves */}
+        <circle cx="24" cy="12" r="3" fill="white" />
+        <path d="M24 9V12H21" stroke="#10B981" strokeWidth="1.5" />
+        
+        {/* Pulse waves */}
         <circle 
-          cx="16" 
+          cx="24" 
           cy="12" 
-          r="1.5" 
-          fill="white"
-          style={{
-            transformOrigin: "center",
-            transform: hovered ? "scale(1.2)" : "scale(1)",
-            transition: "transform 0.2s ease"
-          }}
-        />
-        
-        {/* Info line with pulse effect */}
-        <line 
-          x1="16" 
-          y1="16" 
-          x2="16" 
-          y2="22" 
+          r="5" 
           stroke="white" 
-          strokeWidth="2"
-          strokeLinecap="round"
-          style={{
-            opacity: hovered ? 0.8 : 1,
-            transform: hovered ? "scaleY(1.1)" : "scaleY(1)",
-            transformOrigin: "center top",
-            transition: "all 0.2s ease"
-          }}
+          strokeWidth="1.5" 
+          fill="none"
+          strokeOpacity={hovered ? 0.6 : 0.3}
+          style={{ transition: "all 0.3s ease" }}
+        />
+        <circle 
+          cx="24" 
+          cy="12" 
+          r="7" 
+          stroke="white" 
+          strokeWidth="1.5" 
+          fill="none"
+          strokeOpacity={hovered ? 0.3 : 0.1}
+          style={{ transition: "all 0.3s ease" }}
         />
       </svg>
       
@@ -105,4 +105,4 @@ const InfoIcon: React.FC<InfoIconProps> = ({
   );
 };
 
-export default InfoIcon;
+export default SiteVisitsIcon;

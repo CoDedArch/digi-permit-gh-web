@@ -1,14 +1,12 @@
 "use client";
 import React, { useState } from "react";
 
-interface NotificationIconProps extends React.SVGProps<SVGSVGElement> {
+interface InspectIconProps extends React.SVGProps<SVGSVGElement> {
   title?: string;
-  hasNotification?: boolean; // New prop for notification indicator
 }
 
-const NotificationIcon: React.FC<NotificationIconProps> = ({
-  title = "Notifications",
-  hasNotification = false,
+const InspectIcon: React.FC<InspectIconProps> = ({
+  title = "Inspect",
   ...props
 }) => {
   const [hovered, setHovered] = useState(false);
@@ -35,39 +33,27 @@ const NotificationIcon: React.FC<NotificationIconProps> = ({
         }}
         {...props}
       >
-        <rect width="32" height="32" rx="8" fill="#7C3AED" /> {/* Purple background */}
-        
-        {/* Bell body */}
+        <rect width="32" height="32" rx="8" fill="#3B82F6" />
         <path
-          d="M22 16C22 12 20 10 16 10C12 10 10 12 10 16C10 20 9 21 9 21H23C23 21 22 20 22 16Z"
+          d="M21 21L26 26"
           stroke="#fff"
-          strokeWidth="1.5"
-          fill="none"
-        />
-        
-        {/* Bell clapper */}
-        <path
-          d="M16 21V23"
-          stroke="#fff"
-          strokeWidth="1.5"
+          strokeWidth="2"
           strokeLinecap="round"
         />
         <circle
-          cx="16"
-          cy="8"
-          r="1.5"
-          fill="#fff"
+          cx="14"
+          cy="14"
+          r="7"
+          stroke="#fff"
+          strokeWidth="2"
+          fill="none"
         />
-        
-        {/* Notification indicator */}
-        {hasNotification && (
-          <circle
-            cx="22"
-            cy="10"
-            r="3"
-            fill="#EF4444" /* Red dot for notifications */
-          />
-        )}
+        <path
+          d="M14 11V14H17"
+          stroke="#fff"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
       </svg>
       {hovered && (
         <span
@@ -93,4 +79,4 @@ const NotificationIcon: React.FC<NotificationIconProps> = ({
   );
 };
 
-export default NotificationIcon;
+export default InspectIcon;

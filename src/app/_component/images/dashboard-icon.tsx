@@ -13,9 +13,9 @@ const DashboardIcon: React.FC<DashboardIconProps> = ({
 
   return (
     <div
+      className="flex items-center gap-2 relative"
       style={{
-        display: "inline-block",
-        position: "relative",
+        display: "inline-flex",
         cursor: "pointer",
       }}
       onMouseEnter={() => setHovered(true)}
@@ -29,7 +29,7 @@ const DashboardIcon: React.FC<DashboardIconProps> = ({
         style={{
           transition: "transform 0.3s cubic-bezier(.4,2,.6,1)",
           transform: hovered ? "translateX(20px)" : "translateX(0)",
-          display: "block",
+          flexShrink: 0,
         }}
         {...props}
       >
@@ -47,12 +47,22 @@ const DashboardIcon: React.FC<DashboardIconProps> = ({
           strokeWidth="2"
         />
       </svg>
+      <p 
+        className="whitespace-nowrap"
+        style={{
+          transition: "opacity 0.2s ease",
+          opacity: hovered ? 0 : 1,
+          pointerEvents: "none",
+        }}
+      >
+        {title}
+      </p>
       {hovered && (
         <span
           className="bg-gray-900 text-white"
           style={{
             position: "absolute",
-            left: "110%",
+            left: "calc(100% + 8px)",
             top: "50%",
             transform: "translateY(-50%)",
             padding: "4px 12px",
