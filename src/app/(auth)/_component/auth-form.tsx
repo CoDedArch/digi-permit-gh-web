@@ -4,19 +4,26 @@ import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
 import { useRef } from "react";
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/app/context/AuthContext";
 
 // type AuthMode = "login" | "signup";
 type AuthMethod = "email" | "phone" | "google";
 
 const AuthForm = () => {
+  const { refetch } = useAuth();
   // const [authMode, setAuthMode] = useState<AuthMode>("login");
+  const router = useRouter();
   const [authMethod, setAuthMethod] = useState<AuthMethod | null>(null);
   const [otpSendSuccess, setOtpSendSuccess] = useState(false);
   const [otpVerifiedSuccess, setOtpVerifiedSuccess] = useState(false);
+  const [isOnboarding, setIsOnboarding] = useState(false);
+  const [otpHasExpired, setOtpHasExpired] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     phone: "",
     otp: "",
+    rememberMe: false,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -132,7 +139,9 @@ const AuthForm = () => {
           body: JSON.stringify({
             contact: authMethod === "phone" ? formData.phone : formData.email,
             otp: formData.otp,
+            remember: formData.rememberMe,
           }),
+          credentials: "include",
         });
 
         const data = await res.json();
@@ -141,12 +150,19 @@ const AuthForm = () => {
           // If the server provides a specific error message, show it
           const errorMessage =
             data?.detail || "OTP verification failed. Please try again.";
+          if (data?.detail === "OTP has expired.") {
+            setOtpHasExpired(true);
+            setOtpSendSuccess(false);
+            formData.otp = "";
+          }
           setError(errorMessage);
           setSuccess("");
           return;
         }
+        console.log("After Verification", data);
         setOtpVerifiedSuccess(true);
         setSuccess(data.message);
+        setIsOnboarding(data.onboarding);
       }
 
       // You can handle email/Google methods separately if needed
@@ -168,6 +184,24 @@ const AuthForm = () => {
       otpRefs.current[0].focus();
     }
   }, [formData.otp]);
+
+  //redirect to onboarding if user is first time user
+  useEffect(() => {
+  if (otpVerifiedSuccess) {
+    // Add a small delay to ensure cookie is set
+    const timer = setTimeout(() => {
+      refetch().then(() => {
+        if (isOnboarding) {
+          router.push("/onboarding");
+        } else {
+          router.push("/");
+        }
+      });
+    }, 1000); // 1000ms delay
+
+    return () => clearTimeout(timer);
+  }
+}, [otpVerifiedSuccess, isOnboarding, router, refetch]);
 
   return (
     <div className="min-h-screen flex-1 flex items-center justify-center p-4 bg-gradient-to-br from-blue-50/20 to-purple-50/ rounded-2xl">
@@ -191,7 +225,7 @@ const AuthForm = () => {
             {error}
           </div>
         )}
-        {success && (
+        {success && !error && (
           <div className="mb-6 p-3 bg-green-50 text-green-700 rounded-lg text-sm">
             {success}
           </div>
@@ -363,7 +397,28 @@ const AuthForm = () => {
                     />
                   ))}
                 </div>
-                <p className="mt-2 text-sm text-gray-500 text-center">
+                <div className="flex items-center mt-4">
+                  <input
+                    id="rememberMe"
+                    type="checkbox"
+                    checked={formData.rememberMe}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        rememberMe: e.target.checked,
+                      }))
+                    }
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    disabled={loading}
+                  />
+                  <label
+                    htmlFor="rememberMe"
+                    className="ml-2 block text-sm text-gray-700"
+                  >
+                    Remember me on this device for 30 days
+                  </label>
+                </div>
+                <p className="mt-2 text-sm text-green-900 text-center">
                   Enter the 6-digit code sent to your{" "}
                   {authMethod === "phone" ? "phone" : "email"}
                 </p>
@@ -402,7 +457,9 @@ const AuthForm = () => {
               ) : otpSendSuccess ? (
                 "Verify Code"
               ) : (
-                `Send ${authMethod === "email" ? "Email" : "SMS"} Code`
+                `Send ${authMethod === "email" ? "Email" : "SMS"} Code ${
+                  otpHasExpired ? "Again" : ""
+                }`
               )}
             </button>
 
@@ -410,7 +467,12 @@ const AuthForm = () => {
               type="button"
               onClick={() => {
                 setAuthMethod(null);
-                setFormData({ email: "", phone: "", otp: "" });
+                setFormData({
+                  email: "",
+                  phone: "",
+                  otp: "",
+                  rememberMe: false,
+                });
                 setSuccess("");
                 setError("");
               }}
