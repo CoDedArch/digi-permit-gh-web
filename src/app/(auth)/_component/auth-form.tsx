@@ -103,10 +103,12 @@ const AuthForm = () => {
     setLoading(true);
     setError("");
 
+    const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL;
+
     try {
       if (!formData.otp) {
         // Phase 1: Send OTP
-        const res = await fetch("http://localhost:8000/auth/send-otp", {
+        const res = await fetch(`${NEXT_PUBLIC_API_URL}auth/send-otp`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -133,7 +135,7 @@ const AuthForm = () => {
         // Reveal OTP input
         setFormData((prev) => ({ ...prev, otp: "" }));
       } else {
-        const res = await fetch("http://localhost:8000/auth/verify-otp", {
+        const res = await fetch(`${NEXT_PUBLIC_API_URL}auth/verify-otp`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -187,21 +189,26 @@ const AuthForm = () => {
 
   //redirect to onboarding if user is first time user
   useEffect(() => {
-  if (otpVerifiedSuccess) {
-    // Add a small delay to ensure cookie is set
-    const timer = setTimeout(() => {
-      refetch().then(() => {
-        if (isOnboarding) {
-          router.push("/onboarding");
-        } else {
-          router.push("/");
-        }
-      });
-    }, 1000); // 1000ms delay
+    if (otpVerifiedSuccess) {
+      const contact = authMethod === "phone" ? formData.phone : formData.email;
+      // Add a small delay to ensure cookie is set
+      const timer = setTimeout(() => {
+        refetch().then(() => {
+          if (isOnboarding) {
+            router.push(
+              `/onboarding?method=${authMethod}&contact=${encodeURIComponent(
+                contact,
+              )}`,
+            );
+          } else {
+            router.push("/");
+          }
+        });
+      }, 1000); // 1000ms delay
 
-    return () => clearTimeout(timer);
-  }
-}, [otpVerifiedSuccess, isOnboarding, router, refetch]);
+      return () => clearTimeout(timer);
+    }
+  }, [otpVerifiedSuccess, isOnboarding, router, refetch, authMethod, formData]);
 
   return (
     <div className="min-h-screen flex-1 flex items-center justify-center p-4 bg-gradient-to-br from-blue-50/20 to-purple-50/ rounded-2xl">

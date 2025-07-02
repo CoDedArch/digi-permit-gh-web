@@ -1,7 +1,6 @@
 // app/_component/layout/Sidebar.tsx
 "use client";
 
-import DigiLogo from "../images/digi-logo";
 import MyApplicationsIcon from "../images/my-application-icon";
 import NewApplicationIcon from "../images/new-application";
 import ReviewQueueIcon from "../images/review-queue-icon";
@@ -17,6 +16,7 @@ import ViolationsIcon from "../images/violations-icon";
 import InfoIcon from "../images/info-icon";
 import { useAuth } from "../../context/AuthContext";
 import { LogOut } from "lucide-react";
+import Link from "next/link";
 
 export default function Sidebar() {
   const { user, authenticated, loading, logout } = useAuth();
@@ -42,11 +42,20 @@ export default function Sidebar() {
 `}
     >
       <nav className="flex flex-col gap-4 flex-1  w-full mt-10 pl-10">
-        <DashboardIcon />
+        <Link href={"/"}>
+          <DashboardIcon />
+        </Link>
         {authenticated && (
           <>
-            <MyApplicationsIcon />
-            <NewApplicationIcon />
+            <Link href={"/"}>
+              <MyApplicationsIcon />
+            </Link>
+            <Link
+              href={"/new-application"}
+              className="flex items-center space-x-2"
+            >
+              <NewApplicationIcon />
+            </Link>
             <InspectionsIcon />
 
             {/* Perculiar to Review Officers */}
