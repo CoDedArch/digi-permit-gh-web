@@ -335,6 +335,20 @@ export async function getDrainageTypes(): Promise<{ id: number; name: string; de
 }
 
 
+export async function getCurrentUser(): Promise<{
+  authenticated: boolean;
+  user_id: number;
+  applicant_type_code: string;
+}> {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}auth/me`, {
+    credentials: "include",
+  });
+
+  if (!response.ok) throw new Error("Not authenticated");
+  return response.json();
+}
+
+
 // lib/api/getSiteConditions.ts
 
 export async function getSiteConditions(): Promise<{ id: number; name: string; description?: string }[]> {
@@ -359,9 +373,11 @@ export async function getSiteConditions(): Promise<{ id: number; name: string; d
 
 // lib/api/getPreviousLandUses.ts
 
-export async function getPreviousLandUses(): Promise<{ id: number; name: string; description?: string }[]> {
+// services/permit.ts
+
+export async function getPreviousLandUses(): Promise<{ id: string; name: string }[]> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/previous-land-uses`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}permits/previous-land-uses`, {
       headers: {
         "Content-Type": "application/json",
       },
