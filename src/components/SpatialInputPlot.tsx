@@ -17,6 +17,7 @@ interface SpatialPolygonInputProps {
   value: string | null;
   onChange: (value: string) => void;
   center: [number, number]; // [latitude, longitude]
+  referencePolygon?: string;
 }
 
 function GeomanHandler({ onChange }: { onChange: (geojson: string) => void }) {
@@ -59,6 +60,7 @@ export default function SpatialPolygonInput({
   value,
   onChange,
   center,
+  referencePolygon,
 }: SpatialPolygonInputProps) {
   return (
     <div className="h-64 w-full rounded-md overflow-hidden border">
@@ -72,7 +74,9 @@ export default function SpatialPolygonInput({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
         />
+
         <FeatureGroup>
+          {/* ✅ User Drawn Parcel */}
           {value && (
             <Polygon
               positions={JSON.parse(value).coordinates[0].map(
@@ -82,6 +86,21 @@ export default function SpatialPolygonInput({
             />
           )}
         </FeatureGroup>
+
+        {/* ✅ Reference Zoning Overlay */}
+        {referencePolygon && (
+          <Polygon
+            positions={JSON.parse(referencePolygon).coordinates[0].map(
+              ([lng, lat]: [number, number]) => [lat, lng],
+            )}
+            pathOptions={{
+              color: "gray",
+              dashArray: "5, 5",
+              fillOpacity: 0.1,
+            }}
+          />
+        )}
+
         <GeomanHandler onChange={onChange} />
       </MapContainer>
     </div>
