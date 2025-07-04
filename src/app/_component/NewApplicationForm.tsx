@@ -31,6 +31,7 @@ import {
 import { cn } from "@/lib/utils";
 import {
   DocumentType,
+  getCurrentUser,
   getZoningUses,
   initiatePayment,
   ZoningUse,
@@ -71,6 +72,16 @@ const LONG_FORM_TYPES = [
   "change_of_use",
   "demolition",
 ];
+
+const architectSchema = z.object({
+  full_name: z.string().optional(),
+  email: z.string().email("Invalid email").optional().or(z.literal("")),
+  phone: z.string().optional(),
+  firm_name: z.string().optional(),
+  license_number: z.string().optional(),
+  role: z.string().optional().default("architect"),
+});
+
 const createApplicationSchema = z.object({
   permitTypeId: z.any(),
   projectName: z.string().min(1),
@@ -80,13 +91,13 @@ const createApplicationSchema = z.object({
   zoningDistrictId: z.string().min(1).optional(),
   zoningUseId: z.string().min(1).optional(),
   architectId: z.string().optional(),
-  estimatedCost: z.coerce.number().min(0),
-  constructionArea: z.coerce.number().min(0),
-  expectedStartDate: z.date().optional(),
-  expectedEndDate: z.date().optional(),
-  drainageTypeId: z.string().min(1),
+  estimatedCost: z.coerce.number().min(0).nullable().optional(),
+  constructionArea: z.coerce.number().min(0).nullable().optional(),
+  expectedStartDate: z.coerce.date().optional(),
+  expectedEndDate: z.coerce.date().optional(),
+  drainageTypeId: z.string().optional().or(z.literal("")),
   siteConditionIds: z.array(z.string()).optional(),
-  previousLandUseId: z.string().min(1),
+  previousLandUseId: z.string().min(1, "Required").optional().or(z.literal("")),
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
   parcelGeometry: z.any().optional(), // For GeoJSON polygon
@@ -107,8 +118,8 @@ const createApplicationSchema = z.object({
   setbacks: z.string().optional(),
   bufferZones: z.string().optional(),
   density: z.string().optional(),
-  fireSafetyPlan: z.string().min(1, "Required"),
-  wasteManagementPlan: z.string().min(1, "Required"),
+  fireSafetyPlan: z.any().optional(),
+  wasteManagementPlan: z.any().optional(),
 
   documentUploads: z.record(
     z.object({
@@ -119,6 +130,7 @@ const createApplicationSchema = z.object({
 
   // Schema
   mmdaId: z.string().min(1, "Please select an MMDA"),
+  architect: architectSchema.optional(),
 });
 
 interface NewApplicationFormProps {
@@ -127,7 +139,7 @@ interface NewApplicationFormProps {
   // zoningUses: { id: string; use: string; zoning_district_id: string }[];
   drainageTypes: { id: string; name: string; description?: string }[];
   siteConditions: { id: number; name: string; description?: string }[];
-  previousLandUses: { id: string; label: string }[];
+  previousLandUses: { id: string; name: string }[];
   mmdas: {
     id: number;
     name: string;
@@ -150,6 +162,7 @@ export default function NewApplicationForm({
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [hasPaid, setHasPaid] = useState(false);
+  const [showArchitectFields, setShowArchitectFields] = useState(false);
   const form = useForm({
     resolver: zodResolver(createApplicationSchema),
     defaultValues: {
@@ -161,8 +174,8 @@ export default function NewApplicationForm({
       zoningDistrictId: "",
       zoningUseId: "",
       architectId: "",
-      estimatedCost: 0,
-      constructionArea: 0,
+      estimatedCost: null,
+      constructionArea: null,
       expectedStartDate: undefined,
       expectedEndDate: undefined,
       drainageTypeId: "",
@@ -193,6 +206,15 @@ export default function NewApplicationForm({
 
       // Default values
       mmdaId: "",
+
+      architect: {
+        full_name: "",
+        email: "",
+        phone: "",
+        firm_name: "",
+        license_number: "",
+        role: "architect",
+      },
     },
   });
 
@@ -249,11 +271,14 @@ export default function NewApplicationForm({
     formData.append("file", file);
     formData.append("doc_type_id", docTypeId);
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}uploads/application-documents`, {
-      method: "POST",
-      body: formData,
-      credentials: "include",
-    });
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}uploads/application-documents`,
+      {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      },
+    );
 
     const result = await res.json();
 
@@ -295,16 +320,35 @@ export default function NewApplicationForm({
     try {
       const payload = {
         ...values,
-        expected_start_date: values.expectedStartDate?.toISOString(),
-        expected_end_date: values.expectedEndDate?.toISOString(),
-      };
-      const response = await fetch("/api/applications", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+        expected_start_date: values.expectedStartDate,
+        expected_end_date: values.expectedEndDate,
+        parcelGeometry:
+          typeof values.parcelGeometry === "string"
+            ? JSON.parse(values.parcelGeometry)
+            : values.parcelGeometry,
+        zoningDistrictSpatial:
+          typeof values.zoningDistrictSpatial === "string"
+            ? JSON.parse(values.zoningDistrictSpatial)
+            : values.zoningDistrictSpatial,
+        projectLocation: {
+          type: "Point",
+          coordinates: [values.longitude, values.latitude],
         },
-        body: JSON.stringify(payload),
-      });
+        gisMetadata: values.gisMetadata ?? [],
+      };
+
+      console.log("Payload:", payload);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}applications/submit-application`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+          credentials: "include",
+        },
+      );
 
       if (!response.ok) throw new Error("Failed to create application");
       const newApplication = await response.json();
@@ -396,7 +440,7 @@ export default function NewApplicationForm({
       form.setValue("zoningUseId", undefined);
       // reset other fields
     }
-  }, [permitType.id]);
+  }, [permitType.id, form]);
 
   useEffect(() => {
     const saved = localStorage.getItem("pendingApplication");
@@ -408,12 +452,31 @@ export default function NewApplicationForm({
         form.reset(parsed); // ✅ Restore values
         if (savedStep === "finish") {
           setStep(steps.indexOf("Finish")); // ✅ Jump to last step
+          setHasPaid(true);
         }
       } catch {
         console.warn("Failed to parse saved form data.");
       }
     }
   }, [form, steps]);
+
+  useEffect(() => {
+    async function checkApplicantType() {
+      try {
+        const user = await getCurrentUser();
+        if (
+          user.applicant_type_code === "individual" ||
+          user.applicant_type_code === "property_owner"
+        ) {
+          setShowArchitectFields(true);
+        }
+      } catch (error) {
+        console.error("Failed to get user type:", error);
+      }
+    }
+
+    checkApplicantType();
+  }, []);
 
   return (
     <Form {...form}>
@@ -541,6 +604,90 @@ export default function NewApplicationForm({
                   )}
                 />
               </div>
+              {showArchitectFields && (
+                <div className="border rounded-xl p-6 space-y-6 bg-muted/50 shadow-sm">
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-semibold">
+                      Architect Information
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Required if you&apos;re applying as an{" "}
+                      <strong>individual</strong> or{" "}
+                      <strong>property owner</strong>. Provide details of the
+                      licensed professional overseeing the project.
+                    </p>
+                  </div>
+
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <FormField
+                      name="architect.full_name"
+                      control={form.control}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Full Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      name="architect.email"
+                      control={form.control}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input type="email" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      name="architect.phone"
+                      control={form.control}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone Number</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      name="architect.firm_name"
+                      control={form.control}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Firm Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      name="architect.license_number"
+                      control={form.control}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>License Number</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+              )}
+
               {/* New Location Fields Section */}
               <div className="border rounded-lg p-6 space-y-6">
                 <h3 className="font-medium">Project Location</h3>
@@ -644,109 +791,6 @@ export default function NewApplicationForm({
                     Geocode from Address
                   </Button>
                 </div>
-
-                <FormField
-                  name="parcelGeometry"
-                  control={form.control}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Parcel Boundary (GeoJSON)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="file"
-                          accept=".geojson,.json"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              const reader = new FileReader();
-                              reader.onload = (event) => {
-                                try {
-                                  const geoJson = JSON.parse(
-                                    event.target?.result as string,
-                                  );
-                                  field.onChange(geoJson);
-                                } catch {
-                                  toast.error("Invalid GeoJSON file");
-                                }
-                              };
-                              reader.readAsText(file);
-                            }
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  name="gisMetadata"
-                  control={form.control}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>GIS Metadata (Optional)</FormLabel>
-                      <FormControl>
-                        <div className="space-y-2">
-                          {Array.isArray(field.value)
-                            ? field.value.map(
-                                (
-                                  entry: { key: string; value: string },
-                                  index: number,
-                                ) => (
-                                  <div
-                                    key={index}
-                                    className="grid grid-cols-2 gap-2"
-                                  >
-                                    <Input
-                                      placeholder="Key"
-                                      value={entry.key}
-                                      onChange={(e) => {
-                                        const updated = [
-                                          ...(Array.isArray(field.value)
-                                            ? field.value
-                                            : []),
-                                        ];
-                                        updated[index].key = e.target.value;
-                                        field.onChange(updated);
-                                      }}
-                                    />
-                                    <Input
-                                      placeholder="Value"
-                                      value={entry.value}
-                                      onChange={(e) => {
-                                        const updated = [
-                                          ...(Array.isArray(field.value)
-                                            ? field.value
-                                            : []),
-                                        ];
-                                        updated[index].value = e.target.value;
-                                        field.onChange(updated);
-                                      }}
-                                    />
-                                  </div>
-                                ),
-                              )
-                            : null}
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              field.onChange([
-                                ...(Array.isArray(field.value)
-                                  ? field.value
-                                  : []),
-                                { key: "", value: "" },
-                              ])
-                            }
-                          >
-                            + Add Metadata
-                          </Button>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </div>
 
               <MMDAPicker mmdas={mmdas} form={form} />
@@ -1012,6 +1056,97 @@ export default function NewApplicationForm({
                     applicant bears full responsibility for any discrepancies.
                   </p>
                 </div>
+              </div>
+              <div className="space-y-10 mb-10">
+                <FormField
+                  name="parcelGeometry"
+                  control={form.control}
+                  render={({ field: parcelField }) => (
+                    <FormItem>
+                      <FormLabel>Define Property Boundary (Parcel)</FormLabel>
+                      <SpatialPolygonInput
+                        value={parcelField.value}
+                        onChange={parcelField.onChange}
+                        center={[
+                          form.watch("latitude") ?? 0,
+                          form.watch("longitude") ?? 0,
+                        ]}
+                        referencePolygon={form.watch("zoningDistrictSpatial")} // 👈 Overlay reference
+                      />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  name="gisMetadata"
+                  control={form.control}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>GIS Metadata (Optional)</FormLabel>
+                      <FormControl>
+                        <div className="space-y-2">
+                          {Array.isArray(field.value)
+                            ? field.value.map(
+                                (
+                                  entry: { key: string; value: string },
+                                  index: number,
+                                ) => (
+                                  <div
+                                    key={index}
+                                    className="grid grid-cols-2 gap-2"
+                                  >
+                                    <Input
+                                      placeholder="Key"
+                                      value={entry.key}
+                                      onChange={(e) => {
+                                        const updated = [
+                                          ...(Array.isArray(field.value)
+                                            ? field.value
+                                            : []),
+                                        ];
+                                        updated[index].key = e.target.value;
+                                        field.onChange(updated);
+                                      }}
+                                    />
+                                    <Input
+                                      placeholder="Value"
+                                      value={entry.value}
+                                      onChange={(e) => {
+                                        const updated = [
+                                          ...(Array.isArray(field.value)
+                                            ? field.value
+                                            : []),
+                                        ];
+                                        updated[index].value = e.target.value;
+                                        field.onChange(updated);
+                                      }}
+                                    />
+                                  </div>
+                                ),
+                              )
+                            : null}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              field.onChange([
+                                ...(Array.isArray(field.value)
+                                  ? field.value
+                                  : []),
+                                { key: "", value: "" },
+                              ])
+                            }
+                          >
+                            + Add Metadata
+                          </Button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
               {/* Technical Inputs + Zoning Reference Panel */}
               {!!selectedZoningDistrict && (
@@ -1391,6 +1526,7 @@ export default function NewApplicationForm({
                   )}
                 />
               </div>
+
               <FormField
                 name="previousLandUseId"
                 control={form.control}
@@ -1412,7 +1548,7 @@ export default function NewApplicationForm({
                           >
                             <div className="inline-block w-2 h-2 rounded-full bg-primary/50" />
                             <span className="text-sm font-medium">
-                              {use.label}
+                              {use.name}
                             </span>
                           </SelectItem>
                         ))}
@@ -1718,7 +1854,7 @@ export default function NewApplicationForm({
                                         String(docReq.document_type.id),
                                       );
                                       toast.success("Document uploaded");
-                                    } catch (err) {
+                                    } catch {
                                       toast.error("Upload failed");
                                     }
                                   }
@@ -1727,21 +1863,24 @@ export default function NewApplicationForm({
                               />
                             </FormControl>
 
-                            {/* Display uploaded info */}
                             {field.value?.file_url && (
-                              <div className="mt-2 text-sm text-gray-700">
-                                Uploaded:{" "}
-                                <a
-                                  href={field.value.file_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-blue-600 underline"
-                                >
-                                  View Document
-                                </a>
+                              <div className="mt-3 flex items-center gap-3 rounded-md border border-green-200 bg-green-50 px-3 py-2">
+                                <CheckCircle className="text-green-600 w-5 h-5 flex-shrink-0" />
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-medium text-green-800">
+                                    Document uploaded successfully
+                                  </span>
+                                  <a
+                                    href={field.value.file_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-sm text-blue-600 underline hover:text-blue-800 transition"
+                                  >
+                                    View Document
+                                  </a>
+                                </div>
                               </div>
                             )}
-
                             <FormMessage />
                           </FormItem>
                         )}
@@ -1775,21 +1914,22 @@ export default function NewApplicationForm({
                 </p>
               </div>
 
-              {/* Payment Info */}
-              <div className="rounded-md border p-4 bg-blue-50 text-sm text-blue-900 border-blue-200">
-                <h4 className="font-medium mb-1">Submission Fee</h4>
-                <p>
-                  A non-refundable <strong>processing fee</strong> of{" "}
-                  <span className="text-base font-semibold text-blue-700">
-                    ₵{permitType.base_fee}
-                  </span>{" "}
-                  will be charged. This fee covers the form review and
-                  administrative processing. <br />
-                  <span className="font-medium text-red-500">
-                    Note: This is <u>not</u> your final permit cost.
-                  </span>
-                </p>
-              </div>
+              {!hasPaid && (
+                <div className="rounded-md border p-4 bg-blue-50 text-sm text-blue-900 border-blue-200">
+                  <h4 className="font-medium mb-1">Submission Fee</h4>
+                  <p>
+                    A non-refundable <strong>processing fee</strong> of{" "}
+                    <span className="text-base font-semibold text-blue-700">
+                      ₵{permitType.base_fee}
+                    </span>{" "}
+                    will be charged. This fee covers the form review and
+                    administrative processing. <br />
+                    <span className="font-medium text-red-500">
+                      Note: This is <u>not</u> your final permit cost.
+                    </span>
+                  </p>
+                </div>
+              )}
 
               {/* Payment Action */}
               {!hasPaid && (
@@ -1808,7 +1948,21 @@ export default function NewApplicationForm({
             <Button
               type="button"
               variant="outline"
-              onClick={() => setStep(step - 1)}
+              onClick={() => {
+                // Clear specific fields before going back
+                if (steps[step] === "Technical") {
+                  form.setValue("occupantCapacity", null);
+                  form.setValue("setbackFront", null);
+                  form.setValue("setbackRear", null);
+                  form.setValue("setbackLeft", null);
+                  form.setValue("setbackRight", null);
+                  form.setValue("setbacks", "");
+                  form.setValue("bufferZones", "");
+                  form.setValue("density", "");
+                  form.setValue("parkingSpaces", null);
+                }
+                setStep(step - 1);
+              }}
             >
               Back
             </Button>
@@ -1831,7 +1985,13 @@ export default function NewApplicationForm({
                   (!form.watch("projectName") ||
                     !form.watch("projectAddress") ||
                     !form.watch("parcelNumber") ||
-                    !form.watch("mmdaId"))) ||
+                    !form.watch("mmdaId") ||
+                    (showArchitectFields &&
+                      (!form.watch("architect.full_name") ||
+                        !form.watch("architect.email") ||
+                        !form.watch("architect.phone") ||
+                        !form.watch("architect.firm_name") ||
+                        !form.watch("architect.license_number"))))) ||
                 (steps[step] === "Project Information" &&
                   (!form.watch("longitude") || !form.watch("latitude"))) ||
                 (steps[step] === "Zoning Districts" &&
@@ -1840,6 +2000,7 @@ export default function NewApplicationForm({
                 (steps[step] === "Zoning Uses" && !form.watch("zoningUseId")) ||
                 (steps[step] === "Technical" &&
                   (!form.watch("estimatedCost") ||
+                    !form.watch("parcelGeometry") ||
                     !form.watch("maxHeight") ||
                     !form.watch("maxCoverage") ||
                     !form.watch("constructionArea") ||
@@ -1898,7 +2059,11 @@ export default function NewApplicationForm({
               Next
             </Button>
           ) : (
-            <Button type="submit" disabled={!hasPaid}>
+            <Button
+              type="submit"
+              disabled={!hasPaid}
+              onClick={form.handleSubmit(onSubmit)}
+            >
               Submit Application
             </Button>
           )}
