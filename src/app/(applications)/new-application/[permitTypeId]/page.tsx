@@ -1,35 +1,28 @@
-// app/applications/new/[permitTypeId]/page.tsx
-import {
-  getPermitTypeById,
-  getZoningDistricts,
-  getDrainageTypes,
-  getSiteConditions,
-  getMMDAs,
-} from "@/app/data/queries";
-import NewApplicationForm from "@/app/_component/NewApplicationForm";
-import { previousLandUses } from "@/schemas/constants";
+// app/new-application/[permitTypeId]/page.tsx
+export const dynamic = "force-dynamic";
 
-function normalizeId<T extends { id: number }>(
-  items: T[],
-): (Omit<T, "id"> & { id: string })[] {
+import { getPermitTypeById, getZoningDistricts, getDrainageTypes, getSiteConditions, getMMDAs, getPreviousLandUses } from "@/app/data/queries";
+import NewApplicationForm from "@/app/_component/NewApplicationForm";
+// import { previousLandUses } from "@/schemas/constants";
+
+interface PageProps {
+  params: { permitTypeId: string };
+}
+
+function normalizeId<T extends { id: number }>(items: T[]): (Omit<T, "id"> & { id: string })[] {
   return items.map(({ id, ...rest }) => ({ id: String(id), ...rest }));
 }
 
-export default async function NewApplicationPage({
-  params,
-}: {
-  params: { permitTypeId: string };
-}) {
-  const permitType = await getPermitTypeById(params.permitTypeId);
+export default async function NewApplicationPage({ params }: PageProps) {
+  const permitType = await getPermitTypeById(params.permitTypeId); // ✅ This is correct
+
   const zoningDistricts = normalizeId(await getZoningDistricts());
   const drainageTypes = normalizeId(await getDrainageTypes());
   const siteConditions = normalizeId(await getSiteConditions());
+  const previousLandUses = await getPreviousLandUses();
   const mmdas = normalizeId(await getMMDAs());
-  // const previousLandUses = normalizeId(await getPreviousLandUses())
 
-  if (!permitType) {
-    return <div>Permit type not found</div>;
-  }
+  if (!permitType) return <div>Permit type not found</div>;
 
   return (
     <div className="container mx-auto px-4 py-8 bg-white min-h-screen">
