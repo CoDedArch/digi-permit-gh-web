@@ -14,6 +14,8 @@ const MyApplicationsIcon: React.FC<HomeLogoProps> = ({ title = "My Applications"
       style={{
         display: "inline-flex",
         cursor: "pointer",
+            zIndex: 1000,
+        
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}

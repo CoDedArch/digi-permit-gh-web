@@ -47,7 +47,7 @@ export default function Sidebar() {
         </Link>
         {authenticated && (
           <>
-            <Link href={"/"}>
+            <Link href={"/my-applications"}>
               <MyApplicationsIcon />
             </Link>
             <Link

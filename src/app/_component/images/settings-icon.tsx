@@ -14,10 +14,11 @@ const SettingsIcon: React.FC<SettingsIconProps> = ({
 
   return (
     <div
-      className="flex items-center gap-2 relative"
+      className="flex items-center gap-2 relative "
       style={{
         display: "inline-flex",
         cursor: "pointer",
+        zIndex: 1000000,
       }}
       onMouseEnter={() => {
         setHovered(true);
@@ -42,7 +43,7 @@ const SettingsIcon: React.FC<SettingsIconProps> = ({
       >
         {/* Gray background */}
         <rect width="32" height="32" rx="8" fill="#6B7280" />
-        
+
         {/* Gear icon with rotation animation */}
         <g
           style={{
@@ -59,8 +60,8 @@ const SettingsIcon: React.FC<SettingsIconProps> = ({
           />
         </g>
       </svg>
-      
-      <p 
+
+      <p
         className="whitespace-nowrap"
         style={{
           transition: "opacity 0.2s ease",
@@ -70,7 +71,7 @@ const SettingsIcon: React.FC<SettingsIconProps> = ({
       >
         {title}
       </p>
-      
+
       {hovered && (
         <span
           className="bg-gray-900 text-white"
@@ -84,7 +85,7 @@ const SettingsIcon: React.FC<SettingsIconProps> = ({
             boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
             fontSize: 14,
             whiteSpace: "nowrap",
-            zIndex: 10,
+            zIndex: 10000,
             pointerEvents: "none",
           }}
         >
@@ -94,8 +95,12 @@ const SettingsIcon: React.FC<SettingsIconProps> = ({
 
       <style jsx>{`
         @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
         }
       `}</style>
     </div>

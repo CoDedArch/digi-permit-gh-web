@@ -49,7 +49,7 @@ export default function PermitTypeCard({
           >
             {showDetails ? "Hide Details" : "View Requirements"}
           </Button>
-          <Button size="sm" onClick={handleStartApplication}>
+          <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={handleStartApplication}>
             Start Application
           </Button>
         </div>

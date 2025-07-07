@@ -94,7 +94,7 @@ const InfoIcon: React.FC<InfoIconProps> = ({
             boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
             fontSize: 14,
             whiteSpace: "nowrap",
-            zIndex: 10,
+            zIndex: 1000,
             pointerEvents: "none",
           }}
         >

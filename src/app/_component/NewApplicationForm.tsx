@@ -352,7 +352,7 @@ export default function NewApplicationForm({
 
       if (!response.ok) throw new Error("Failed to create application");
       const newApplication = await response.json();
-      router.push(`/applications/${newApplication.id}`);
+      router.push(`/my-applications/${newApplication.id}`);
       toast.success("Application created successfully!");
       localStorage.removeItem("pendingApplication");
       localStorage.removeItem("pendingRedirectUrl");
