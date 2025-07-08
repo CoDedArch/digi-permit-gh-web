@@ -1,5 +1,8 @@
 "use client";
 import * as turf from "@turf/turf";
+import React from "react";
+import { useRouter } from "next/navigation";
+
 import {
   MapContainer,
   TileLayer,
@@ -38,51 +41,80 @@ const fileTextSvg = `
 `;
 
 function PermitMapOverlay({ permits }: { permits: Permit[] }) {
+  const router = useRouter();
+
   return (
     <>
-      {permits.map((permit, i) => (
-        <>
-          {/* Parcel Geometry */}
-          {permit.parcel_geometry && (
-            <Polygon
-              key={`parcel-${i}`}
-              pathOptions={{ color: MMDAColors[permit.status] || "gray" }}
-              positions={permit.parcel_geometry?.coordinates?.[0].map(
-                ([lng, lat]: [number, number]) => [lat, lng],
-              )}
-            >
-              <Tooltip sticky>
-                <div className="text-xs">
-                  <div className="font-bold mb-1">
-                    {icons[permit.status]} {permit.project_name}
-                  </div>
-                  <div>Status: {permit.status}</div>
-                  <div>Type: {permit.permit_type?.name}</div>
-                </div>
-              </Tooltip>
-            </Polygon>
-          )}
+      {permits.map((permit, i) => {
+        const hasGeometry = permit.parcel_geometry?.type === "Polygon";
+        const hasLatLng = permit.latitude != null && permit.longitude != null;
 
-          {/* Project Location Marker */}
-          {permit.parcel_geometry?.type === "Polygon" && (
-            <Marker
-              key={`marker-${i}`}
-              position={turf
-                .center(permit.parcel_geometry)
-                .geometry.coordinates.slice()
-                .reverse()}
-              icon={L.divIcon({
-                className: "text-indigo-600",
-                html: `
-                <div class='bg-indigo-600 text-white w-10 h-10 rounded-full shadow-md flex items-center justify-center'>
-                    ${fileTextSvg}
-                </div>
-                `,
-              })}
-            />
-          )}
-        </>
-      ))}
+        const markerPosition = hasGeometry
+          ? turf
+              .center(permit.parcel_geometry)
+              .geometry.coordinates.slice()
+              .reverse()
+          : hasLatLng
+          ? [permit.latitude, permit.longitude]
+          : null;
+
+        return (
+          <React.Fragment key={`permit-${i}`}>
+            {/* Parcel Geometry */}
+            {hasGeometry && (
+              <Polygon
+                pathOptions={{ color: MMDAColors[permit.status] || "gray" }}
+                positions={permit.parcel_geometry.coordinates[0].map(
+                  ([lng, lat]: [number, number]) => [lat, lng],
+                )}
+              >
+                <Tooltip sticky>
+                  <div className="text-xs">
+                    <div className="font-bold mb-1">
+                      {icons[permit.status]} {permit.project_name}
+                    </div>
+                    <div>Status: {permit.status}</div>
+                    <div>Type: {permit.permit_type?.name}</div>
+                  </div>
+                </Tooltip>
+              </Polygon>
+            )}
+
+            {/* Marker: Either geometry center or lat/lng fallback */}
+            {markerPosition && (
+              <Marker
+                position={markerPosition as [number, number]}
+                icon={L.divIcon({
+                  className: "text-indigo-600",
+                  html: `
+        <div class='bg-indigo-600 text-white w-10 h-10 rounded-full shadow-md flex items-center justify-center'>
+          ${fileTextSvg}
+        </div>
+      `,
+                })}
+                eventHandlers={{
+                  click: () => router.push(`/my-applications/${permit.id}`),
+                }}
+              >
+                <Tooltip direction="top" offset={[0, -10]} opacity={1}>
+                  <div className="text-xs space-y-1">
+                    <div className="font-semibold text-gray-800">
+                      {permit.project_name}
+                    </div>
+                    <div className="text-gray-600">
+                      Status:{" "}
+                      <span className="capitalize">{permit.status}</span>
+                    </div>
+                    <div className="text-gray-600">
+                      Type: {permit.permit_type?.name || "N/A"}
+                    </div>
+                  </div>
+                </Tooltip>
+              </Marker>
+            )}
+          </React.Fragment>
+        );
+      })}
     </>
   );
 }
@@ -104,7 +136,7 @@ function MMDABoundariesOverlay({ mmdas }: { mmdas: MMDA[] }) {
               )}
               pathOptions={{ color: "orange", fillOpacity: 0.2 }}
             >
-              <Tooltip sticky>
+              <Tooltip sticky permanent direction="center" offset={[0, 0]}>
                 <div className="text-xs space-y-1">
                   <div className="font-semibold text-gray-800">{mmda.name}</div>
                   <div className="text-gray-600">Region: {mmda.region}</div>
