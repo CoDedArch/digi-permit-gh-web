@@ -17,6 +17,36 @@ import {
 } from "@/app/data/queries";
 import { AlertCircle, FileText } from "lucide-react";
 
+const cleanNumericDict = (
+  obj?: Record<string, any>,
+): Record<string, number> | undefined => {
+  if (!obj) return undefined;
+
+  const cleaned: Record<string, number> = {};
+
+  for (const [key, value] of Object.entries(obj)) {
+    const num = parseFloat(value);
+    if (!isNaN(num)) {
+      cleaned[key] = num;
+    }
+  }
+
+  return Object.keys(cleaned).length ? cleaned : undefined;
+};
+
+const cleanStringDict = (obj?: any): Record<string, string> | undefined => {
+  if (!obj || typeof obj !== "object") return undefined;
+
+  const cleaned: Record<string, string> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (typeof value === "string" && value.trim() !== "") {
+      cleaned[key] = value.trim();
+    }
+  }
+
+  return Object.keys(cleaned).length ? cleaned : undefined;
+};
+
 const SpatialPolygonInput = dynamic(
   () => import("@/components/SpatialInputPlot"),
   {
@@ -104,12 +134,36 @@ export default function ApplicationPage() {
 
   const saveChanges = async () => {
     try {
+      const {
+        project_name,
+        project_description,
+        fire_safety_plan,
+        waste_management_plan,
+        expected_start_date,
+        expected_end_date,
+        parcel_number,
+        estimated_cost,
+        construction_area,
+      } = form;
+
+      const sanitizedBody = {
+        project_name: project_name?.trim() || undefined,
+        project_description: project_description?.trim() || undefined,
+        fire_safety_plan: fire_safety_plan?.trim() || undefined,
+        waste_management_plan: waste_management_plan?.trim() || undefined,
+        expected_start_date: expected_start_date || undefined,
+        expected_end_date: expected_end_date || undefined,
+        parcel_number: parcel_number?.trim() || undefined,
+        estimated_cost: estimated_cost ?? undefined,
+        construction_area: construction_area ?? undefined,
+      };
+
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}permits/my-applications/${applicationId}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
+          body: JSON.stringify(sanitizedBody),
         },
       );
 
@@ -121,26 +175,15 @@ export default function ApplicationPage() {
       const updatedApp = await res.json();
       setApp(updatedApp);
       setForm({
-        project_name: updatedApp.project_name,
-        project_description: updatedApp.project_description || "",
+        ...form,
+        ...updatedApp,
         expected_start_date: updatedApp.expected_start_date?.slice(0, 10) || "",
         expected_end_date: updatedApp.expected_end_date?.slice(0, 10) || "",
-        parcel_number: updatedApp.parcel_number || "",
-        project_address: updatedApp.project_address,
-        parking_spaces: updatedApp.parking_spaces || 0,
-        setbacks: updatedApp.setbacks || {},
-        floor_areas: updatedApp.floor_areas || {},
-        site_conditions: updatedApp.site_conditions || {},
-        estimated_cost: updatedApp.estimated_cost || 0,
-        construction_area: updatedApp.construction_area || 0,
-        fire_safety_plan: updatedApp.fire_safety_plan || "",
-        waste_management_plan: updatedApp.waste_management_plan || "",
       });
       setEditing(false);
     } catch (err: unknown) {
       if (err instanceof Error) {
         console.error("Update failed:", err.message);
-        alert(err.message);
       } else {
         console.error("Update failed:", err);
         alert("An unknown error occurred.");
@@ -148,7 +191,7 @@ export default function ApplicationPage() {
     }
   };
 
-  if (loading) return <Skeleton className="w-full h-[400px]" />;
+  if (loading) return <Skeleton className="w-full mx-auto min-h-screen" />;
   if (!app) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen text-center space-y-6 bg-white px-6">

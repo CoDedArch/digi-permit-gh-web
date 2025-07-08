@@ -56,7 +56,11 @@ export default function Sidebar() {
             >
               <NewApplicationIcon />
             </Link>
-            <InspectionsIcon />
+            <Link
+            href={"/schedule-inspection"}
+            >
+              <InspectionsIcon />
+            </Link>
 
             {/* Perculiar to Review Officers */}
             {user?.role === "review_officer" && (

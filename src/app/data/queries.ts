@@ -748,3 +748,25 @@ export async function fetchApplicationDetail(applicationId: string): Promise<{
     }
   }
 }
+
+export interface Inspection {
+  id: number;
+  status: string;
+  scheduled_date: string; // or Date if you parse it
+  application: {
+    project_name: string;
+  };
+  inspection_officer?: {
+    first_name: string;
+    last_name: string;
+  };
+}
+
+
+export async function fetchUserInspections(): Promise<Inspection[]> {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}inspections/user`, {
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to load inspections");
+  return res.json();
+}

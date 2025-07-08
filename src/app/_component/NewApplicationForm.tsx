@@ -1934,7 +1934,7 @@ export default function NewApplicationForm({
               {/* Payment Action */}
               {!hasPaid && (
                 <div className="flex justify-center">
-                  <Button size="lg" className="px-8" onClick={handlePayment}>
+                  <Button type="button" size="lg" className="px-8" onClick={handlePayment}>
                     Pay ₵{permitType.base_fee}
                   </Button>
                 </div>

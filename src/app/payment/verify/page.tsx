@@ -37,7 +37,7 @@ export default function PaymentVerifyPage() {
   }, [router]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
+    <div className="flex min-h-screen items-center justify-center bg-white">
       <div className="text-center space-y-4">
         <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto" />
         <p className="text-sm text-muted-foreground">Verifying payment...</p>

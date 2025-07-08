@@ -13,6 +13,7 @@ import {
   FileText,
   Check,
   CheckCircle,
+  Loader,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -34,7 +35,9 @@ export default function MyApplicationsPage() {
   return (
     <div className="container mx-auto p-6 space-y-6 min-h-screen bg-white">
       {loading && (
-        <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-10" />
+        <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-10 flex items-center justify-center">
+          <Loader className="w-6 h-6 animate-spin text-gray-600" />
+        </div>
       )}
       <h1 className="text-2xl font-semibold">My Applications</h1>
 
