@@ -15,9 +15,10 @@ import { useEffect } from "react";
 
 interface SpatialPolygonInputProps {
   value: string | null;
-  onChange: (value: string) => void;
-  center: [number, number]; // [latitude, longitude]
+  onChange?: (value: string) => void; // Made optional
+  center: [number, number];
   referencePolygon?: string;
+  readonly?: boolean; // Added new prop
 }
 
 function GeomanHandler({ onChange }: { onChange: (geojson: string) => void }) {
@@ -61,6 +62,7 @@ export default function SpatialPolygonInput({
   onChange,
   center,
   referencePolygon,
+  readonly = false, // Default to false
 }: SpatialPolygonInputProps) {
   return (
     <div className="h-64 w-full rounded-md overflow-hidden border">
@@ -75,33 +77,39 @@ export default function SpatialPolygonInput({
           attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
         />
 
-        <FeatureGroup>
-          {/* ✅ User Drawn Parcel */}
-          {value && (
-            <Polygon
-              positions={JSON.parse(value).coordinates[0].map(
-                ([lng, lat]: [number, number]) => [lat, lng],
-              )}
-              pathOptions={{ color: "#4f46e5" }}
-            />
-          )}
-        </FeatureGroup>
-
-        {/* ✅ Reference Zoning Overlay */}
-        {referencePolygon && (
+        {/* Parcel Boundary (primary) */}
+        {value && (
           <Polygon
-            positions={JSON.parse(referencePolygon).coordinates[0].map(
-              ([lng, lat]: [number, number]) => [lat, lng],
+            positions={JSON.parse(value).coordinates[0].map(
+              ([lng, lat]: [number, number]) => [lat, lng]
             )}
-            pathOptions={{
-              color: "gray",
-              dashArray: "5, 5",
-              fillOpacity: 0.1,
+            pathOptions={{ 
+              color: "#4f46e5",
+              fillOpacity: 0.4,
+              weight: 2
             }}
           />
         )}
 
-        <GeomanHandler onChange={onChange} />
+        {/* Zoning District (reference) */}
+        {referencePolygon && (
+          <Polygon
+            positions={JSON.parse(referencePolygon).coordinates[0].map(
+              ([lng, lat]: [number, number]) => [lat, lng]
+            )}
+            pathOptions={{
+              color: "#64748b",
+              dashArray: "5, 5",
+              fillOpacity: 0.1,
+              weight: 1
+            }}
+          />
+        )}
+
+        {/* Only show editing controls if not readonly */}
+        {!readonly && onChange && (
+          <GeomanHandler onChange={onChange} />
+        )}
       </MapContainer>
     </div>
   );
