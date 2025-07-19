@@ -53,7 +53,7 @@ export default function ApplicantDashboard() {
           description="Request a site inspection for your project"
           icon={<CalendarCheck className="h-6 w-6" />}
           buttonText="Schedule"
-          href="/inspections"
+          href="/schedule-inspection"
         />
       </div>
     </div>

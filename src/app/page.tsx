@@ -38,7 +38,7 @@ export default function HomePage() {
 // Updated DashboardLayout to use custom logout
 function DashboardLayout({ role, children }: { role: UserRole, children: React.ReactNode}) {
   const roleTitles = {
-    applicant: "Your Dashboard",
+    applicant: "My Dashboard",
     review_officer: "Review Officer Portal",
     inspection_officer: "Inspection Dashboard",
     admin: "Administrator Console"

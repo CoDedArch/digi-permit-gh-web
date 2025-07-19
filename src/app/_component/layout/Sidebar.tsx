@@ -41,59 +41,115 @@ export default function Sidebar() {
   bg-opacity-95
 `}
     >
-      <nav className="flex flex-col gap-4 flex-1  w-full mt-10 pl-10">
+      <nav className="flex flex-col gap-4 flex-1 w-full mt-10 pl-10">
         <Link href={"/"}>
           <DashboardIcon />
         </Link>
+
         {authenticated && (
           <>
-            <Link href={"/my-applications"}>
-              <MyApplicationsIcon />
-            </Link>
-            <Link
-              href={"/new-application"}
-              className="flex items-center space-x-2"
-            >
-              <NewApplicationIcon />
-            </Link>
-            <Link
-            href={"/schedule-inspection"}
-            >
-              <InspectionsIcon />
-            </Link>
-
-            {/* Perculiar to Review Officers */}
-            {user?.role === "review_officer" && (
+            {user?.is_active ? (
               <>
-                <ReviewQueueIcon />
-                <ExceptionsIcon />
-                <MetricsIcon />
+                <Link href={"/my-applications"}>
+                  <MyApplicationsIcon />
+                </Link>
+                <Link
+                  href={"/new-application"}
+                  className="flex items-center space-x-2"
+                >
+                  <NewApplicationIcon />
+                </Link>
+                <Link href={"/schedule-inspection"}>
+                  <InspectionsIcon />
+                </Link>
+
+                {user?.role === "review_officer" && (
+                  <>
+                    <Link href={"/review/review-queue"}>
+                      <ReviewQueueIcon />
+                    </Link>
+                    <Link href={"/exceptions"}>
+                      <ExceptionsIcon />
+                    </Link>
+                    <Link href={"/metrics"}>
+                      <MetricsIcon />
+                    </Link>
+                  </>
+                )}
+
+                {user?.role === "inspection_officer" && (
+                  <>
+                    <SiteVisitsIcon />
+                    <ViolationsIcon />
+                  </>
+                )}
+
+                {user?.role === "admin" && (
+                  <>
+                    <UserManagementIcon />
+                    <AnalyticsIcon />
+                  </>
+                )}
+
+                <SettingsIcon />
+              </>
+            ) : (
+              <>
+                <div className="opacity-40 cursor-not-allowed">
+                  <MyApplicationsIcon />
+                </div>
+                <div className="opacity-40 cursor-not-allowed">
+                  <NewApplicationIcon />
+                </div>
+                <div className="opacity-40 cursor-not-allowed">
+                  <InspectionsIcon />
+                </div>
+
+                {user?.role === "review_officer" && (
+                  <>
+                    <div className="opacity-40 cursor-not-allowed">
+                      <ReviewQueueIcon />
+                    </div>
+                    <div className="opacity-40 cursor-not-allowed">
+                      <ExceptionsIcon />
+                    </div>
+                    <div className="opacity-40 cursor-not-allowed">
+                      <MetricsIcon />
+                    </div>
+                  </>
+                )}
+
+                {user?.role === "inspection_officer" && (
+                  <>
+                    <div className="opacity-40 cursor-not-allowed">
+                      <SiteVisitsIcon />
+                    </div>
+                    <div className="opacity-40 cursor-not-allowed">
+                      <ViolationsIcon />
+                    </div>
+                  </>
+                )}
+
+                {user?.role === "admin" && (
+                  <>
+                    <div className="opacity-40 cursor-not-allowed">
+                      <UserManagementIcon />
+                    </div>
+                    <div className="opacity-40 cursor-not-allowed">
+                      <AnalyticsIcon />
+                    </div>
+                  </>
+                )}
+
+                <div className="opacity-40 cursor-not-allowed">
+                  <SettingsIcon />
+                </div>
               </>
             )}
-
-            {/* Perculiar to Inspection Officers */}
-
-            {user?.role === "inspection_officer" && (
-              <>
-                <SiteVisitsIcon />
-                <ViolationsIcon />
-              </>
-            )}
-
-            {/* Perculiar to Admin */}
-            {user?.role === "admin" && (
-              <>
-                <UserManagementIcon />
-                <AnalyticsIcon />
-              </>
-            )}
-
-            {/* Common for all authenticated users */}
-
-            <SettingsIcon />
           </>
         )}
       </nav>
+
       <div className="flex flex-col gap-8 mb-8 ">
         <InfoIcon />
         {authenticated && (

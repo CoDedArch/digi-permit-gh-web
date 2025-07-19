@@ -25,7 +25,7 @@ export default async function NewApplicationPage({ params }: PageProps) {
   if (!permitType) return <div>Permit type not found</div>;
 
   return (
-    <div className="container mx-auto px-4 py-8 bg-white min-h-screen">
+    <div className="px-6 py-8 bg-white min-h-screen">
       <h1 className="text-2xl font-bold mb-6">
         New {permitType.name} Application
       </h1>

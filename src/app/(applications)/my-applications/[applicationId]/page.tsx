@@ -210,7 +210,7 @@ export default function ApplicationPage() {
             Go Back
           </Button>
           <Button variant="secondary" asChild>
-            <a href="/my-applications">My Applications</a>
+            <Link href="/my-applications">My Applications</Link>
           </Button>
         </div>
       </div>
@@ -224,7 +224,7 @@ export default function ApplicationPage() {
   ].includes(app.status?.toLowerCase());
 
   return (
-    <div className="container mx-auto p-6 space-y-6 bg-white min-h-screen">
+    <div className="p-6 space-y-6 bg-white min-h-screen">
       <Card>
         <CardHeader className="flex flex-row justify-between items-center">
           <div>

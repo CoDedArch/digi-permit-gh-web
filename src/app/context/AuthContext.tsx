@@ -8,6 +8,7 @@ type User = {
   user_id: string;
   onboarding: boolean;
   role: UserRole;
+  is_active: boolean;
 };
 
 type AuthContextType = {
@@ -27,7 +28,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const fetchUser = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:8000/auth/me", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}auth/me`, {
         credentials: "include", // Important for sending cookie
         headers: {
           "Cache-Control": "no-cache",
@@ -37,10 +38,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (!res.ok) throw new Error("Not authenticated");
 
       const data = await res.json();
+
+      console.log(data.is_active)
       setUser({
         user_id: data.user_id,
         onboarding: data.onboarding,
         role: data.role,
+        is_active: data.is_active,
       });
     } catch {
       setUser(null);

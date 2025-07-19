@@ -99,7 +99,7 @@ export default function RequestInspectionPage() {
   }, []);
 
   return (
-    <div className="container min-h-screen flex flex-col justify-center items-center mx-auto px-4 py-10 bg-white ">
+    <div className="min-h-screen flex flex-col justify-center items-center px-6 py-10 bg-white ">
       <div className="">
         <Link href="/schedule-inspection">
           <Button variant="ghost" className="mb-6">

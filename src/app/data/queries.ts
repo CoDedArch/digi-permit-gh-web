@@ -1,4 +1,5 @@
 import { PermitTypeWithRequirements, ZoningDistrict } from "@/types";
+import { Geometry } from "geojson";
 
 // lib/utils/uploadFile.ts
 export async function uploadFile(file: File): Promise<string> {
@@ -247,6 +248,79 @@ export async function getApplicantTypes(): Promise<ApplicantType[]> {
   }
 }
 
+export interface Review {
+  id: number;
+  reviewer_id: number;
+  comment: string;
+  status: string;
+  created_at: string;
+}
+
+export interface Inspection {
+  id: number;
+  inspector_id: number;
+  notes: string;
+  date: string;
+  status: string;
+}
+
+export interface StatusHistory {
+  id: number;
+  status: string;
+  changed_at: string;
+  changed_by: number;
+}
+
+
+export enum ApplicationStatus {
+  DRAFT = "draft",
+  SUBMITTED = "submitted",
+  UNDER_REVIEW = "under_review",
+  ADDITIONAL_INFO_REQUESTED = "additional_info_requested",
+  APPROVED = "approved",
+  REJECTED = "rejected",
+  INSPECTION_PENDING = "inspection_pending",
+  INSPECTION_COMPLETED = "inspected",
+  FOR_APPROVAL_OR_REJECTION = "approval requested",
+  ISSUED = "issued",
+  COMPLETED = "completed",
+  CANCELLED = "cancelled",
+}
+
+export interface PermitApplication extends ApplicationDetail {
+  id: number;
+  reviews: Review[];
+  inspections: Inspection[];
+  status_history: StatusHistory[];
+}
+
+export async function getPermitApplicationById(
+  permitId: number,
+): Promise<PermitApplication | null> {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}applications/reviewer/permit/${permitId}`,
+      {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch permit application");
+    }
+
+    const data: PermitApplication = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching permit application:", error);
+    return null;
+  }
+}
+
 // lib/api/getZoningDistricts.ts
 
 export async function getZoningDistricts(): Promise<ZoningDistrict[]> {
@@ -358,6 +432,63 @@ export async function getCurrentUser(): Promise<{
 
   if (!response.ok) throw new Error("Not authenticated");
   return response.json();
+}
+
+export type UserData = {
+  user: {
+    id: number;
+    email: string;
+    first_name: string;
+    last_name: string;
+    other_name: string;
+    phone: string;
+    alt_phone: string;
+    is_active: boolean;
+    preferred_verification: string;
+    role: string;
+    verification_stage: string;
+    date_of_birth: string | null;
+    gender: string;
+    address: string;
+    applicant_type_code: string | null;
+  };
+  profile?: {
+    ghana_card_number: string | null;
+    digital_address: string | null;
+    specialization: string | null;
+    work_email: string | null;
+    staff_number: string | null;
+    designation: string | null;
+  };
+  documents: {
+    id: number;
+    document_type: string;
+    file_url: string;
+  }[];
+};
+
+export async function getUserWithProfile(): Promise<UserData | null> {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}auth/me/profile`,
+      {
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch user data");
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+    return null;
+  }
 }
 
 // lib/api/getSiteConditions.ts
@@ -550,7 +681,23 @@ export async function getMyApplications(): Promise<Application[]> {
   }
 }
 
-import { Geometry } from "geojson";
+
+interface ZoningDistrictDetail {
+  name: string;
+  code: string;
+  max_height?: number | null;         // in meters
+  max_coverage?: number | null;       // as decimal (0.45 = 45%)
+  min_plot_size?: number | null;      // in m²
+  density?: string | null;            // e.g. "10-15", ">30", "Max 300"
+  parking_requirement?: string | null; // e.g. "2 spaces per 5 units"
+  setbacks?: {                        // parsed setback requirements
+    front?: number;
+    sides?: number;
+    rear?: number;
+  } | null;
+  population_served?: string | null;  // e.g. "Up to 5,000"
+  buffer_zones?: string | null;       // buffer zone description
+}
 
 // Extended Application interface for detailed application data
 export interface ApplicationDetail {
@@ -606,10 +753,7 @@ export interface ApplicationDetail {
     use: string;
   } | null;
 
-  zoning_district?: {
-    name: string;
-    code: string;
-  } | null;
+  zoning_district?: ZoningDistrictDetail | null;
 
   previous_land_use?: {
     name: string;
@@ -762,11 +906,14 @@ export interface Inspection {
   };
 }
 
-
-export async function fetchUserInspections(): Promise<Inspection[]> {
+export async function fetchUserInspections(): Promise<{
+  requested: Inspection[];
+  assigned: Inspection[];
+}> {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}inspections/user`, {
     credentials: "include",
   });
   if (!res.ok) throw new Error("Failed to load inspections");
   return res.json();
 }
+

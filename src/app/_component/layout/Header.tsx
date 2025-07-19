@@ -3,11 +3,14 @@
 import { Bell, Mail, User, Search } from "lucide-react";
 import DigiLogo from "../images/digi-logo";
 import { useAuth } from "../../context/AuthContext";
+import Link from "next/link";
 
 export default function AppHeader() {
   const { user, authenticated, loading } = useAuth();
 
   if (!authenticated || loading) return null;
+
+  console.log("Role", user?.role)
 
   return (
     <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-100 h-16 w-full">
@@ -49,7 +52,7 @@ export default function AppHeader() {
           </div>
 
           {/* User Profile */}
-          <div className="flex items-center space-x-2 pl-2 border-l border-gray-200">
+          <Link href="/user-profile" className="flex items-center space-x-2 pl-2 border-l border-gray-200">
             <div className="relative">
               <div className="h-8 w-8 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
                 <User className="h-4 w-4 text-white" />
@@ -66,7 +69,7 @@ export default function AppHeader() {
                 {user?.role?.replace('_', ' ') || "User"}
               </p>
             </div> */}
-          </div>
+          </Link>
         </div>
       </div>
 

@@ -1,6 +1,22 @@
 import { Clock } from "lucide-react";
 
-export default function InspectionCard({ time, permitNo, address, type, status }: { time: string, permitNo: string, address: string, type: string, status: string }) {
+interface InspectionCardProps {
+  time: string;
+  permitNo: string;
+  address: string;
+  type: string;
+  status: string;
+  inspectionId: number;
+}
+
+export default function InspectionCard({ 
+  time, 
+  permitNo, 
+  address, 
+  type, 
+  status,
+  inspectionId 
+}: InspectionCardProps) {
   return (
     <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
       <div className="flex justify-between items-start">
