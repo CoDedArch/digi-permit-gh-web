@@ -6,175 +6,86 @@ const DigiLogo: React.FC = () => {
   const router = useRouter();
   return (
     <svg
-      width="48"
-      height="48"
-      viewBox="0 0 48 48"
+      width="56"
+      height="56"
+      viewBox="0 0 56 56"
+      onClick={() => router.push("/")}
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      onClick={() => router.push("/")}
-      className="inline-block hover:scale-105 transition-transform duration-300 hover:cursor-pointer"
+      className="inline-block hover:scale-[1.05] transition-transform duration-300 hover:cursor-pointer"
     >
-      <rect
-        x="6"
-        y="8"
-        width="36"
-        height="32"
-        rx="4"
-        fill="#6366F1"
-        style={{
-          transformOrigin: "24px 24px",
-          animation:
-            "logo-bg-bounce 1.8s infinite cubic-bezier(.68,-0.55,.27,1.55)",
-        }}
-      />
+      {/* Ghana Flag Colors Background Circle */}
+      <circle cx="28" cy="28" r="26" fill="#DC2626" opacity="0.1" />
+
+      {/* Modern Building Structure */}
       <rect
         x="12"
-        y="14"
-        width="24"
-        height="20"
-        rx="2"
-        fill="#fff"
-        style={{
-          opacity: 0.95,
-          animation:
-            "logo-fade-in 1.2s 0.3s both, logo-float 4s ease-in-out infinite 1.5s",
-        }}
-      />
-      <rect
-        x="16"
         y="18"
-        width="16"
-        height="4"
-        rx="1"
-        fill="#A5B4FC"
-        style={{
-          animation:
-            "logo-slide-in 1s 0.5s both, logo-color-shift 4s infinite 1.5s",
-        }}
-      />
-      <rect
-        x="16"
-        y="24"
-        width="10"
-        height="2.5"
-        rx="1"
-        fill="#C7D2FE"
-        style={{
-          animation:
-            "logo-slide-in 1s 0.7s both, logo-bar-grow 2s infinite alternate 1.7s",
-        }}
-      />
-      <rect
-        x="16"
-        y="28"
-        width="8"
-        height="2.5"
-        rx="1"
-        fill="#C7D2FE"
-        style={{
-          animation:
-            "logo-slide-in 1s 0.9s both, logo-bar-grow 2.2s infinite alternate 1.9s",
-        }}
-      />
-      <circle
-        cx="36"
-        cy="32"
-        r="3"
-        fill="#22D3EE"
-        stroke="#fff"
-        strokeWidth="2"
-        style={{
-          animation:
-            "logo-pulse 1.5s infinite, logo-orbital-rotate 6s linear infinite 2s",
-        }}
-      />
-      <rect
-        x="32"
-        y="30"
-        width="8"
-        height="4"
-        rx="2"
-        fill="#22D3EE"
-        opacity="0.3"
-        style={{
-          animation:
-            "logo-fade-in 1.2s 1.1s both, logo-glow 3s infinite alternate 2s",
-        }}
-      />
-      <rect
-        x="8"
-        y="8"
         width="32"
-        height="6"
+        height="26"
         rx="3"
-        fill="#22D3EE"
-        opacity="0.7"
-        style={{
-          animation:
-            "logo-fade-in 1.2s 1.3s both, logo-wave 4s ease-in-out infinite 1.5s",
-        }}
+        fill="url(#buildingGradient)"
       />
-      <rect
-        x="20"
-        y="34"
-        width="8"
-        height="2"
-        rx="1"
-        fill="#6366F1"
-        opacity="0.5"
-        style={{
-          animation:
-            "logo-fade-in 1.2s 1.5s both, logo-dash-move 3s linear infinite 2s",
-        }}
+
+      {/* Building Details */}
+      <rect x="18" y="24" width="3" height="3" rx="0.5" fill="#FEF3C7" />
+      <rect x="23" y="24" width="3" height="3" rx="0.5" fill="#FEF3C7" />
+      <rect x="28" y="24" width="3" height="3" rx="0.5" fill="#FEF3C7" />
+      <rect x="33" y="24" width="3" height="3" rx="0.5" fill="#FEF3C7" />
+
+      <rect x="18" y="30" width="3" height="3" rx="0.5" fill="#FEF3C7" />
+      <rect x="23" y="30" width="3" height="3" rx="0.5" fill="#FEF3C7" />
+      <rect x="28" y="30" width="3" height="3" rx="0.5" fill="#FEF3C7" />
+      <rect x="33" y="30" width="3" height="3" rx="0.5" fill="#FEF3C7" />
+
+      <rect x="18" y="36" width="3" height="6" rx="0.5" fill="#FBBF24" />
+      <rect x="33" y="36" width="3" height="6" rx="0.5" fill="#FEF3C7" />
+
+      {/* Door */}
+      <rect x="25" y="36" width="6" height="8" rx="1" fill="#92400E" />
+      <circle cx="29" cy="40" r="0.5" fill="#FBBF24" />
+
+      {/* Digital Approval Badge with Ghana Star */}
+      <circle cx="42" cy="18" r="8" fill="#059669" />
+      <circle cx="42" cy="18" r="6" fill="#10B981" />
+
+      {/* Ghana Black Star */}
+      <path
+        d="M42 14L43.2 17.2L46.5 17.2L43.9 19.3L45.1 22.5L42 20.4L38.9 22.5L40.1 19.3L37.5 17.2L40.8 17.2L42 14Z"
+        fill="#000000"
       />
-      <style>{`
-                @keyframes logo-bg-bounce {
-                    0%, 100% { transform: scale(1); }
-                    50% { transform: scale(1.04); }
-                }
-                @keyframes logo-fade-in {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
-                }
-                @keyframes logo-slide-in {
-                    from { opacity: 0; transform: translateX(-10px);}
-                    to { opacity: 1; transform: translateX(0);}
-                }
-                @keyframes logo-pulse {
-                    0%, 100% { r: 3; transform: scale(1); }
-                    50% { r: 4; transform: scale(1.1); }
-                }
-                @keyframes logo-float {
-                    0%, 100% { transform: translateY(0); }
-                    50% { transform: translateY(-3px); }
-                }
-                @keyframes logo-color-shift {
-                    0%, 100% { fill: #A5B4FC; }
-                    50% { fill: #818CF8; }
-                }
-                @keyframes logo-bar-grow {
-                    from { width: var(--start-width); }
-                    to { width: calc(var(--start-width) * 1.3); }
-                }
-                @keyframes logo-orbital-rotate {
-                    0% { transform: rotate(0deg) translateX(5px) rotate(0deg); }
-                    100% { transform: rotate(360deg) translateX(5px) rotate(-360deg); }
-                }
-                @keyframes logo-glow {
-                    from { filter: drop-shadow(0 0 2px #22D3EE); }
-                    to { filter: drop-shadow(0 0 6px #22D3EE); }
-                }
-                @keyframes logo-wave {
-                    0%, 100% { transform: translateY(0); }
-                    50% { transform: translateY(-2px); }
-                }
-                @keyframes logo-dash-move {
-                    0% { stroke-dashoffset: 0; }
-                    100% { stroke-dashoffset: 10; }
-                }
-            `}</style>
+
+      {/* Checkmark over star */}
+      <path
+        d="M40 18L41.5 19.5L44.5 16"
+        stroke="white"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+
+      {/* Digital Elements */}
+      <rect x="8" y="12" width="2" height="2" rx="1" fill="#3B82F6" />
+      <rect x="46" y="34" width="2" height="2" rx="1" fill="#3B82F6" />
+      <rect x="6" y="38" width="2" height="2" rx="1" fill="#10B981" />
+
+      {/* Foundation */}
+      <rect x="10" y="44" width="36" height="3" rx="1.5" fill="#1E40AF" />
+
+      <defs>
+        <linearGradient
+          id="buildingGradient"
+          x1="0%"
+          y1="0%"
+          x2="100%"
+          y2="100%"
+        >
+          <stop offset="0%" stopColor="#2563EB" />
+          <stop offset="50%" stopColor="#1D4ED8" />
+          <stop offset="100%" stopColor="#1E40AF" />
+        </linearGradient>
+      </defs>
     </svg>
   );
 };
-
 export default DigiLogo;

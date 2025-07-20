@@ -10,20 +10,28 @@ export default function AppHeader() {
 
   if (!authenticated || loading) return null;
 
-  console.log("Role", user?.role)
+  console.log("Role", user?.role);
 
   return (
     <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-100 h-16 w-full">
       <div className="flex items-center justify-between h-full px-4 lg:px-6">
         {/* Left side - Logo and App Name */}
         <div className="flex items-center space-x-4">
-          <div className="flex items-center">
+          <div className="flex items-center gap-3">
             <DigiLogo />
-            <span className="ml-2 text-4xl font-bold bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent">
-              Digi-Permit
-            </span>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
+                  DigiPermit
+                </span>
+              </div>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-xs font-semibold bg-gradient-to-r from-red-600 to-green-600 bg-clip-text text-transparent uppercase tracking-wide">
+                  🇬🇭 Republic of Ghana • Official Platform
+                </span>
+              </div>
+            </div>
           </div>
-
           {/* Search bar - visible on larger screens */}
           <div className="hidden md:flex items-center ml-6">
             <div className="relative">
@@ -52,7 +60,10 @@ export default function AppHeader() {
           </div>
 
           {/* User Profile */}
-          <Link href="/user-profile" className="flex items-center space-x-2 pl-2 border-l border-gray-200">
+          <Link
+            href="/user-profile"
+            className="flex items-center space-x-2 pl-2 border-l border-gray-200"
+          >
             <div className="relative">
               <div className="h-8 w-8 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
                 <User className="h-4 w-4 text-white" />
