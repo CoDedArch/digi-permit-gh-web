@@ -10,12 +10,11 @@ const MyApplicationsIcon: React.FC<HomeLogoProps> = ({ title = "My Applications"
 
   return (
     <div
-      className="flex items-center gap-2 relative "
+      className="flex items-center gap-2 relative"
       style={{
         display: "inline-flex",
         cursor: "pointer",
-            zIndex: 1000,
-        
+        zIndex: 1000,
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -49,7 +48,7 @@ const MyApplicationsIcon: React.FC<HomeLogoProps> = ({ title = "My Applications"
         <rect x="20" y="30" width="8" height="4" rx="1" fill="#fff" />
       </svg>
       <p 
-        className="whitespace-nowrap"
+        className="whitespace-nowrap font-semibold text-sm text-gray-700 tracking-wide"
         style={{
           transition: "opacity 0.2s ease",
           opacity: hovered ? 0 : 1,
@@ -60,19 +59,19 @@ const MyApplicationsIcon: React.FC<HomeLogoProps> = ({ title = "My Applications"
       </p>
       {hovered && (
         <span
-          className="bg-gray-900 text-white"
+          className="bg-gray-900 text-white font-medium text-sm"
           style={{
             position: "absolute",
             left: "calc(100% + 8px)",
             top: "50%",
             transform: "translateY(-50%)",
-            padding: "4px 12px",
-            borderRadius: "6px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-            fontSize: 14,
+            padding: "6px 12px",
+            borderRadius: "8px",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
             whiteSpace: "nowrap",
-            zIndex: 10,
+            zIndex: 1000,
             pointerEvents: "none",
+            letterSpacing: "0.025em",
           }}
         >
           {title}

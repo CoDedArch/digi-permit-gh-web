@@ -35,43 +35,43 @@ const SiteVisitsIcon: React.FC<SiteVisitsIconProps> = ({
       >
         {/* Green background */}
         <rect width="32" height="32" rx="8" fill="#10B981" />
-        
+
         {/* Building icon */}
         <rect x="12" y="14" width="8" height="10" fill="white" />
         <rect x="14" y="16" width="1" height="2" fill="#10B981" />
         <rect x="17" y="16" width="1" height="2" fill="#10B981" />
         <rect x="14" y="20" width="1" height="2" fill="#10B981" />
         <rect x="17" y="20" width="1" height="2" fill="#10B981" />
-        
+
         {/* Map pin with pulse waves */}
         <circle cx="24" cy="12" r="3" fill="white" />
         <path d="M24 9V12H21" stroke="#10B981" strokeWidth="1.5" />
-        
+
         {/* Pulse waves */}
-        <circle 
-          cx="24" 
-          cy="12" 
-          r="5" 
-          stroke="white" 
-          strokeWidth="1.5" 
+        <circle
+          cx="24"
+          cy="12"
+          r="5"
+          stroke="white"
+          strokeWidth="1.5"
           fill="none"
           strokeOpacity={hovered ? 0.6 : 0.3}
           style={{ transition: "all 0.3s ease" }}
         />
-        <circle 
-          cx="24" 
-          cy="12" 
-          r="7" 
-          stroke="white" 
-          strokeWidth="1.5" 
+        <circle
+          cx="24"
+          cy="12"
+          r="7"
+          stroke="white"
+          strokeWidth="1.5"
           fill="none"
           strokeOpacity={hovered ? 0.3 : 0.1}
           style={{ transition: "all 0.3s ease" }}
         />
       </svg>
-      
-      <p 
-        className="whitespace-nowrap"
+
+      <p
+        className="whitespace-nowrap font-semibold text-sm text-gray-700 tracking-wide"
         style={{
           transition: "opacity 0.2s ease",
           opacity: hovered ? 0 : 1,
@@ -80,22 +80,22 @@ const SiteVisitsIcon: React.FC<SiteVisitsIconProps> = ({
       >
         {title}
       </p>
-      
+
       {hovered && (
         <span
-          className="bg-gray-900 text-white"
+          className="bg-gray-900 text-white font-medium text-sm"
           style={{
             position: "absolute",
             left: "calc(100% + 8px)",
             top: "50%",
             transform: "translateY(-50%)",
-            padding: "4px 12px",
-            borderRadius: "6px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-            fontSize: 14,
+            padding: "6px 12px",
+            borderRadius: "8px",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
             whiteSpace: "nowrap",
             zIndex: 1000,
             pointerEvents: "none",
+            letterSpacing: "0.025em",
           }}
         >
           {title}

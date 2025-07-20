@@ -6,7 +6,7 @@ interface DashboardIconProps extends React.SVGProps<SVGSVGElement> {
 }
 
 const DashboardIcon: React.FC<DashboardIconProps> = ({
-  title = "Your Dashboard",
+  title = "My Dashboard",
   ...props
 }) => {
   const [hovered, setHovered] = useState(false);
@@ -48,7 +48,7 @@ const DashboardIcon: React.FC<DashboardIconProps> = ({
         />
       </svg>
       <p 
-        className="whitespace-nowrap"
+        className="whitespace-nowrap font-semibold text-sm text-gray-700 tracking-wide"
         style={{
           transition: "opacity 0.2s ease",
           opacity: hovered ? 0 : 1,
@@ -59,19 +59,19 @@ const DashboardIcon: React.FC<DashboardIconProps> = ({
       </p>
       {hovered && (
         <span
-          className="bg-gray-900 text-white"
+          className="bg-gray-900 text-white font-medium text-sm"
           style={{
             position: "absolute",
             left: "calc(100% + 8px)",
             top: "50%",
             transform: "translateY(-50%)",
-            padding: "4px 12px",
-            borderRadius: "6px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-            fontSize: 14,
+            padding: "6px 12px",
+            borderRadius: "8px",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
             whiteSpace: "nowrap",
             zIndex: 1000,
             pointerEvents: "none",
+            letterSpacing: "0.025em",
           }}
         >
           {title}

@@ -33,15 +33,14 @@ const UserManagementIcon: React.FC<UserManagementIconProps> = ({
         }}
         {...props}
       >
-        <rect width="32" height="32" rx="8" fill="#7C3AED" /> {/* Purple background */}
-        
+        <rect width="32" height="32" rx="8" fill="#7C3AED" />{" "}
+        {/* Purple background */}
         {/* User group silhouette */}
         <path
           d="M11 20C11 17.7909 12.7909 16 15 16H17C19.2091 16 21 17.7909 21 20V21H11V20Z"
           fill="white"
         />
         <circle cx="16" cy="12" r="3" fill="white" />
-        
         {/* Gear/settings icon */}
         <path
           d="M22 19L24 17M24 17L26 15M24 17L26 19M24 17L22 15"
@@ -51,9 +50,9 @@ const UserManagementIcon: React.FC<UserManagementIconProps> = ({
         />
         <circle cx="24" cy="17" r="1" fill="white" />
       </svg>
-      
-      <p 
-        className="whitespace-nowrap"
+
+      <p
+        className="whitespace-nowrap font-semibold text-sm text-gray-700 tracking-wide"
         style={{
           transition: "opacity 0.2s ease",
           opacity: hovered ? 0 : 1,
@@ -62,22 +61,22 @@ const UserManagementIcon: React.FC<UserManagementIconProps> = ({
       >
         {title}
       </p>
-      
+
       {hovered && (
         <span
-          className="bg-gray-900 text-white"
+          className="bg-gray-900 text-white font-medium text-sm"
           style={{
             position: "absolute",
             left: "calc(100% + 8px)",
             top: "50%",
             transform: "translateY(-50%)",
-            padding: "4px 12px",
-            borderRadius: "6px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-            fontSize: 14,
+            padding: "6px 12px",
+            borderRadius: "8px",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
             whiteSpace: "nowrap",
             zIndex: 1000,
             pointerEvents: "none",
+            letterSpacing: "0.025em",
           }}
         >
           {title}

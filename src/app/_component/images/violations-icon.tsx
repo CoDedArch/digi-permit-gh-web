@@ -35,7 +35,7 @@ const ViolationsIcon: React.FC<ViolationsIconProps> = ({
       >
         {/* Red background for urgency */}
         <rect width="32" height="32" rx="8" fill="#EF4444" />
-        
+
         {/* Warning triangle */}
         <path
           d="M16 10L22 22H10L16 10Z"
@@ -43,11 +43,11 @@ const ViolationsIcon: React.FC<ViolationsIconProps> = ({
           strokeWidth="1.5"
           fill="white"
         />
-        
+
         {/* Exclamation mark */}
         <rect x="15" y="15" width="2" height="6" rx="1" fill="#EF4444" />
         <circle cx="16" cy="23" r="1" fill="#EF4444" />
-        
+
         {/* Document with X symbol */}
         <rect x="20" y="12" width="8" height="10" rx="1" fill="white" />
         <path
@@ -57,35 +57,33 @@ const ViolationsIcon: React.FC<ViolationsIconProps> = ({
           strokeLinecap="round"
         />
       </svg>
-      
-      <p 
-        className="whitespace-nowrap"
+
+      <p
+        className="whitespace-nowrap font-semibold text-sm text-gray-700 tracking-wide"
         style={{
           transition: "opacity 0.2s ease",
           opacity: hovered ? 0 : 1,
           pointerEvents: "none",
-            zIndex: 1000,
-
         }}
       >
         {title}
       </p>
-      
+
       {hovered && (
         <span
-          className="bg-gray-900 text-white"
+          className="bg-gray-900 text-white font-medium text-sm"
           style={{
             position: "absolute",
             left: "calc(100% + 8px)",
             top: "50%",
             transform: "translateY(-50%)",
-            padding: "4px 12px",
-            borderRadius: "6px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-            fontSize: 14,
+            padding: "6px 12px",
+            borderRadius: "8px",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
             whiteSpace: "nowrap",
             zIndex: 1000,
             pointerEvents: "none",
+            letterSpacing: "0.025em",
           }}
         >
           {title}
