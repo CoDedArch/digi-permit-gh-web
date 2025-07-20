@@ -23,6 +23,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Loader2, CheckIcon, SearchIcon } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/app/context/AuthContext";
 
 // Types for MMDA, Department, and Committee
 type MMDABase = {
@@ -50,6 +51,7 @@ enum UserRole {
 
 export default function StaffOnboardingPage() {
   const router = useRouter();
+  const { refetch } = useAuth();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -162,7 +164,7 @@ export default function StaffOnboardingPage() {
         department_id: formData.department_id,
         committee_id: formData.committee_id,
         role: formData.role,
-        specialization: formData.specialization,
+        specialization: formData.specialization || "",
         work_email: formData.work_email?.trim() || null,
         staff_number: formData.staff_number,
         designation: formData.designation,
@@ -186,7 +188,8 @@ export default function StaffOnboardingPage() {
       }
 
       toast.success("🎉 Onboarding complete!");
-      router.push("/");
+      await router.push("/");
+      await refetch(); // Refresh user data
     } catch (err) {
       console.error("Onboarding failed", err);
       toast.error(err instanceof Error ? err.message : "Unexpected error");
@@ -208,12 +211,12 @@ export default function StaffOnboardingPage() {
       case 2:
         return !!formData.committee_id;
       case 3:
-        return !!formData.role;
-      case 4:
         return (
-          !!formData.specialization &&
-          !!formData.staff_number
+          !!formData.role &&
+          (formData.role !== UserRole.REVIEW_OFFICER || formData.specialization)
         );
+      case 4:
+        return !!formData.staff_number;
       default:
         return true;
     }
@@ -271,6 +274,7 @@ export default function StaffOnboardingPage() {
                         type="text"
                         placeholder="Search MMDAs by name or region..."
                         className="pl-10"
+                        disabled={loadingData.mmdas}
                         onChange={(e) => {
                           const searchTerm = e.target.value.toLowerCase();
                           setFilteredMmdas(
