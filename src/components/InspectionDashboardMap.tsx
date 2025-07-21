@@ -288,7 +288,7 @@ export default function InspectorDashboardMap({
       <MapContainer
         center={defaultCenter}
         zoom={11}
-        scrollWheelZoom
+        scrollWheelZoom={false}
         className="h-full w-full"
       >
         <TileLayer

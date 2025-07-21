@@ -57,6 +57,10 @@ export default function MapPreview({
       zoom={16}
       scrollWheelZoom={false}
       className="h-64 w-full rounded-md z-0"
+      style={{
+        zIndex: 0,
+        position: "relative",
+      }}
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'

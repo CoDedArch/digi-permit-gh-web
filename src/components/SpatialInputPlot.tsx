@@ -12,7 +12,6 @@ import "@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css";
 import "leaflet";
 import { useEffect } from "react";
 
-
 interface SpatialPolygonInputProps {
   value: string | null;
   onChange?: (value: string) => void; // Made optional
@@ -71,6 +70,10 @@ export default function SpatialPolygonInput({
         zoom={16}
         scrollWheelZoom
         className="h-full w-full"
+        style={{
+          zIndex: 0,
+          position: "relative",
+        }}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -81,12 +84,12 @@ export default function SpatialPolygonInput({
         {value && (
           <Polygon
             positions={JSON.parse(value).coordinates[0].map(
-              ([lng, lat]: [number, number]) => [lat, lng]
+              ([lng, lat]: [number, number]) => [lat, lng],
             )}
-            pathOptions={{ 
+            pathOptions={{
               color: "#4f46e5",
               fillOpacity: 0.4,
-              weight: 2
+              weight: 2,
             }}
           />
         )}
@@ -95,21 +98,19 @@ export default function SpatialPolygonInput({
         {referencePolygon && (
           <Polygon
             positions={JSON.parse(referencePolygon).coordinates[0].map(
-              ([lng, lat]: [number, number]) => [lat, lng]
+              ([lng, lat]: [number, number]) => [lat, lng],
             )}
             pathOptions={{
               color: "#64748b",
               dashArray: "5, 5",
               fillOpacity: 0.1,
-              weight: 1
+              weight: 1,
             }}
           />
         )}
 
         {/* Only show editing controls if not readonly */}
-        {!readonly && onChange && (
-          <GeomanHandler onChange={onChange} />
-        )}
+        {!readonly && onChange && <GeomanHandler onChange={onChange} />}
       </MapContainer>
     </div>
   );

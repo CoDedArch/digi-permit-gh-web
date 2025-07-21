@@ -183,8 +183,12 @@ export default function ApplicantDashboardMap({
       <MapContainer
         center={defaultCenter}
         zoom={11}
-        scrollWheelZoom
+        scrollWheelZoom={false}
         className="h-full w-full"
+        style={{
+          zIndex: 0,
+          position: "relative",
+        }}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

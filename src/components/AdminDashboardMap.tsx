@@ -12,7 +12,14 @@ import {
   Marker,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import { CheckCircle, Hourglass, ShieldX, CircleDot, Building2, Users } from "lucide-react";
+import {
+  CheckCircle,
+  Hourglass,
+  ShieldX,
+  CircleDot,
+  Building2,
+  Users,
+} from "lucide-react";
 import L from "leaflet";
 import type { Polygon as geoPoly } from "geojson";
 
@@ -95,7 +102,7 @@ const buildingSvg = `
 
 function PermitMapOverlay({ permits }: { permits: Permit[] }) {
   const router = useRouter();
-  
+
   return (
     <>
       {permits.map((permit, i) => {
@@ -136,12 +143,19 @@ function PermitMapOverlay({ permits }: { permits: Permit[] }) {
                       {icons[permit.status]} {permit.project_name}
                     </div>
                     <div>Applicant: {permit.applicant_name}</div>
-                    <div>Status: <span className="capitalize">{permit.status}</span></div>
+                    <div>
+                      Status:{" "}
+                      <span className="capitalize">{permit.status}</span>
+                    </div>
                     <div>Type: {permit.permit_type?.name || "N/A"}</div>
                     <div>MMDA ID: {permit.mmda_id}</div>
-                    {permit.department_id && <div>Dept ID: {permit.department_id}</div>}
+                    {permit.department_id && (
+                      <div>Dept ID: {permit.department_id}</div>
+                    )}
                     {isPersonal && (
-                      <div className="text-purple-600 font-medium">(Personal Property)</div>
+                      <div className="text-purple-600 font-medium">
+                        (Personal Property)
+                      </div>
                     )}
                   </div>
                 </Tooltip>
@@ -191,7 +205,9 @@ function PermitMapOverlay({ permits }: { permits: Permit[] }) {
                     )}
                     <div className="text-gray-600">
                       Status:{" "}
-                      <span className="capitalize font-medium">{permit.status}</span>
+                      <span className="capitalize font-medium">
+                        {permit.status}
+                      </span>
                     </div>
                     <div className="text-gray-600">
                       Type: {permit.permit_type?.name || "N/A"}
@@ -210,11 +226,11 @@ function PermitMapOverlay({ permits }: { permits: Permit[] }) {
   );
 }
 
-function DepartmentMapOverlay({ 
-  departments, 
-  mmdas 
-}: { 
-  departments: Department[]; 
+function DepartmentMapOverlay({
+  departments,
+  mmdas,
+}: {
+  departments: Department[];
   mmdas: MMDA[];
 }) {
   const router = useRouter();
@@ -223,36 +239,60 @@ function DepartmentMapOverlay({
     <>
       {departments.map((dept, i) => {
         // Find the corresponding MMDA to get boundaries
-        const mmda = mmdas.find(m => m.id === dept.mmda_id);
-        if (!mmda || mmda.jurisdiction_boundaries?.type !== "Polygon") return null;
+        const mmda = mmdas.find((m) => m.id === dept.mmda_id);
+        if (!mmda || mmda.jurisdiction_boundaries?.type !== "Polygon")
+          return null;
 
         // Calculate center of MMDA for department marker placement
         const center = turf.center(mmda.jurisdiction_boundaries);
-        const markerPosition = center.geometry.coordinates.slice().reverse() as [number, number];
+        const markerPosition = center.geometry.coordinates
+          .slice()
+          .reverse() as [number, number];
 
         // Offset multiple departments within same MMDA
-        const deptIndex = departments.filter(d => d.mmda_id === dept.mmda_id).indexOf(dept);
+        const deptIndex = departments
+          .filter((d) => d.mmda_id === dept.mmda_id)
+          .indexOf(dept);
         const offset = deptIndex * 0.01; // Small offset for multiple departments
+
+        const finalPosition: [number, number] = [
+          markerPosition[0] + offset,
+          markerPosition[1] + offset,
+        ];
+
+        // Truncate long department names for the label
+        const displayName =
+          dept.name.length > 20
+            ? dept.name.substring(0, 17) + "..."
+            : dept.name;
 
         return (
           <Marker
             key={`dept-${i}`}
-            position={[markerPosition[0] + offset, markerPosition[1] + offset]}
+            position={finalPosition}
             icon={L.divIcon({
               className: "",
               html: `
-                <div class='bg-blue-600 text-white w-12 h-12 rounded-lg shadow-lg flex items-center justify-center border-2 border-white'>
-                  ${buildingSvg}
+                <div class='flex flex-col items-center gap-1 pointer-events-auto'>
+                  <!-- Department Icon -->
+                  <div class='bg-blue-600 text-white w-12 h-12 rounded-lg shadow-lg flex items-center justify-center border-2 border-white hover:bg-blue-700 transition-colors cursor-pointer'>
+                    ${buildingSvg}
+                  </div>
+                  <!-- Department Name Label -->
+                  <div class='bg-white/95 backdrop-blur-sm text-gray-800 px-2 py-1 rounded-md shadow-md border border-gray-200 text-xs font-medium whitespace-nowrap max-w-32 text-center'>
+                    ${displayName}
+                  </div>
                 </div>
               `,
-              iconSize: [48, 48],
-              iconAnchor: [24, 24],
+              iconSize: [120, 80], // Wider to accommodate label
+              iconAnchor: [60, 40], // Center the combined element
             })}
             eventHandlers={{
               click: () => router.push(`/admin/departments/${dept.id}`),
             }}
           >
-            <Tooltip direction="top" offset={[0, -20]} opacity={1}>
+            {/* Detailed tooltip on hover */}
+            <Tooltip direction="top" offset={[0, -40]} opacity={1}>
               <div className="text-xs space-y-1 min-w-40">
                 <div className="font-semibold text-gray-800 flex items-center gap-1">
                   <Building2 className="w-3 h-3" />
@@ -265,9 +305,7 @@ function DepartmentMapOverlay({
                 <div className="text-gray-600">
                   Active Apps: {dept.active_applications}
                 </div>
-                <div className="text-gray-500 text-xs">
-                  MMDA: {mmda.name}
-                </div>
+                <div className="text-gray-500 text-xs">MMDA: {mmda.name}</div>
               </div>
             </Tooltip>
           </Marker>
@@ -278,7 +316,7 @@ function DepartmentMapOverlay({
 }
 
 function MMDABoundariesOverlay({ mmdas }: { mmdas: MMDA[] }) {
-  const router = useRouter();
+  // const router = useRouter();
 
   return (
     <>
@@ -290,19 +328,18 @@ function MMDABoundariesOverlay({ mmdas }: { mmdas: MMDA[] }) {
               key={`mmda-${i}`}
               positions={(
                 mmda.jurisdiction_boundaries as geoPoly
-              ).coordinates.map(
-                (ring) =>
-                  ring.map(([lng, lat]) => [lat, lng] as [number, number]),
+              ).coordinates.map((ring) =>
+                ring.map(([lng, lat]) => [lat, lng] as [number, number]),
               )}
-              pathOptions={{ 
-                color: "#f97316", 
+              pathOptions={{
+                color: "#f97316",
                 fillOpacity: 0.1,
                 weight: 2,
-                dashArray: "10,5"
+                dashArray: "10,5",
               }}
-              eventHandlers={{
-                click: () => router.push(`/admin/mmdas/${mmda.id}`),
-              }}
+              // eventHandlers={{
+              //   click: () => router.push(`/admin/mmdas/${mmda.id}`),
+              // }}
             >
               <Tooltip sticky permanent direction="center" offset={[0, 0]}>
                 <div className="text-xs space-y-1 bg-white/95 p-2 rounded shadow-md">
@@ -328,7 +365,12 @@ function MMDABoundariesOverlay({ mmdas }: { mmdas: MMDA[] }) {
                     </div>
                   </div>
                   <div className="text-xs text-gray-500 mt-1 pt-1 border-t">
-                    Total: {Object.values(mmda.status_counts).reduce((a, b) => a + b, 0)} permits
+                    Total:{" "}
+                    {Object.values(mmda.status_counts).reduce(
+                      (a, b) => a + b,
+                      0,
+                    )}{" "}
+                    permits
                   </div>
                 </div>
               </Tooltip>
@@ -349,17 +391,22 @@ export default function AdminDashboardMap({
   departments: Department[];
 }) {
   // Calculate center based on all permits or default to Ghana center
-  const defaultCenter: [number, number] = permits.length > 0
-    ? [permits[0].latitude || 5.6, permits[0].longitude || -0.2]
-    : [5.6, -0.2]; // Ghana center
+  const defaultCenter: [number, number] =
+    permits.length > 0
+      ? [permits[0].latitude || 5.6, permits[0].longitude || -0.2]
+      : [5.6, -0.2]; // Ghana center
 
   return (
     <div className="h-[75vh] rounded-lg overflow-hidden border shadow-sm">
       <MapContainer
         center={defaultCenter}
         zoom={10}
-        scrollWheelZoom
+        scrollWheelZoom={false}
         className="h-full w-full"
+        style={{
+          zIndex: 0,
+          position: "relative",
+        }}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -373,7 +420,7 @@ export default function AdminDashboardMap({
           <DepartmentMapOverlay departments={departments} mmdas={mmdas} />
         </FeatureGroup>
       </MapContainer>
-      
+
       {/* Map Legend */}
       <div className="absolute bottom-4 left-4 bg-white/95 p-3 rounded-lg shadow-md text-xs z-[1000]">
         <div className="font-semibold mb-2">Map Legend</div>

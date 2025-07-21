@@ -93,6 +93,10 @@ export default function ComplianceMap({
         zoom={16}
         scrollWheelZoom
         className="h-full w-full"
+        style={{
+          zIndex: 0,
+          position: "relative",
+        }}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
