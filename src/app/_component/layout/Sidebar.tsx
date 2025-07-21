@@ -153,13 +153,37 @@ export default function Sidebar() {
       <div className="flex flex-col gap-8 mb-8 ">
         <InfoIcon />
         {authenticated && (
-          <div className="mt-auto pt-4 border-t border-gray-700">
+          <div className="mt-auto pt-4 border-t border-gray-200">
             <button
               onClick={logout}
-              className="flex items-center space-x-2 w-full p-2 rounded hover:bg-slate-300/10 transition-all text-red-400"
+              className="flex items-center justify-center w-full p-3 rounded-lg transition-all duration-200
+              bg-red-600 hover:bg-red-700 
+              text-white font-medium text-sm
+              shadow-sm hover:shadow-md
+              transform hover:scale-[1.01] active:scale-[0.99]
+              group"
             >
-              <LogOut className="h-5 w-5" />
-              <span>Sign Out</span>
+              <LogOut className="h-4 w-4 mr-3 transition-all duration-200 group-hover:scale-105" />
+              <span className="flex-1 text-left">Sign Out</span>
+              <div
+                className="w-6 h-6 rounded-full bg-white/15 flex items-center justify-center
+                    opacity-0 group-hover:opacity-100 transition-all duration-200"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-3 w-3"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M14 5l7 7m0 0l-7 7m7-7H3"
+                  />
+                </svg>
+              </div>
             </button>
           </div>
         )}
