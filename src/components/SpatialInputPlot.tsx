@@ -68,7 +68,7 @@ export default function SpatialPolygonInput({
       <MapContainer
         center={center}
         zoom={16}
-        scrollWheelZoom
+        scrollWheelZoom={false}
         className="h-full w-full"
         style={{
           zIndex: 0,
