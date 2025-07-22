@@ -11,6 +11,7 @@ import {
   ClipboardCheck,
 } from "lucide-react";
 import DigiLogo from "../images/digi-logo";
+import { useRouter } from "next/navigation";
 
 type FeatureProps = {
   icon: React.ReactNode;
@@ -72,6 +73,7 @@ const TestimonialCard = ({
 );
 
 export default function PublicHomepage() {
+  const router = useRouter();
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Hero Section */}
@@ -101,7 +103,10 @@ export default function PublicHomepage() {
                 approved faster with Ghana&apos;s most trusted digital platform.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <button className="bg-white text-indigo-700 font-bold py-4 px-8 rounded-xl shadow-lg hover:bg-gray-50 transition-all duration-200 flex items-center justify-center group">
+                <button
+                  className="bg-white text-indigo-700 font-bold py-4 px-8 rounded-xl shadow-lg hover:bg-gray-50 transition-all duration-200 flex items-center justify-center group"
+                  onClick={() => router.push("/login")}
+                >
                   Let&apos;s Get Started
                   <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </button>
@@ -398,7 +403,10 @@ export default function PublicHomepage() {
             and speed up their building permit process.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-white text-indigo-700 font-bold py-4 px-8 rounded-xl shadow-lg hover:bg-gray-100 transition-all duration-200 flex items-center justify-center group">
+            <button
+              className="bg-white text-indigo-700 font-bold py-4 px-8 rounded-xl shadow-lg hover:bg-gray-100 transition-all duration-200 flex items-center justify-center group"
+              onClick={() => router.push("/login")}
+            >
               Create Your Account
               <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
@@ -452,7 +460,7 @@ export default function PublicHomepage() {
                 <li>Fittings Installation Permit</li>
                 <li>Hoarding Permit</li>
                 <li>Sand Weaning Permit</li>
-                <li>Inspection Services Permit</li>
+                <li>Inspection Services</li>
               </ul>
             </div>
 

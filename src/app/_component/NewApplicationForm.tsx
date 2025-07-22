@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { AlertTriangle, CheckCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle, Plus, X } from "lucide-react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -46,8 +46,8 @@ import {
 import MMDAPicker from "@/components/MmdaPicker";
 
 // import SpatialPolygonInput from "@/components/SpatialInputPlot";
-const SpatialPolygonInput = dynamic(
-  () => import("@/components/SpatialInputPlot"),
+const CoordinateParcelInput = dynamic(
+  () => import("@/components/CoordinateParcelInput"),
   {
     ssr: false,
   },
@@ -436,11 +436,14 @@ export default function NewApplicationForm({
 
   useEffect(() => {
     if (SHORT_FORM_TYPES.includes(permitType.id)) {
-      form.setValue("zoningDistrictId", undefined);
-      form.setValue("zoningUseId", undefined);
-      // reset other fields
+      if (form.getValues("zoningDistrictId") !== undefined) {
+        form.setValue("zoningDistrictId", undefined);
+      }
+      if (form.getValues("zoningUseId") !== undefined) {
+        form.setValue("zoningUseId", undefined);
+      }
     }
-  }, [permitType.id, form]);
+  }, [permitType.id]);
 
   useEffect(() => {
     const saved = localStorage.getItem("pendingApplication");
@@ -799,27 +802,29 @@ export default function NewApplicationForm({
 
           {steps[step] === "Zoning Districts" && (
             <motion.div key="step-1" className="space-y-6">
-              <div className="bg-muted border-l-4 border-primary p-4 rounded-md">
-                <h4 className="font-semibold text-sm mb-1">
+              {/* Info Box */}
+              <div className="bg-muted border-l-4 border-primary p-6 rounded-xl">
+                <h4 className="font-semibold text-base md:text-lg mb-2 text-foreground">
                   Confused about Zoning Districts?
                 </h4>
-                <p className="text-sm text-muted-foreground">
-                  Zoning districts are areas defined by local authorities that
-                  determine what kind of developments are permitted there.
-                  Ghanaian law requires that every project be situated in an
-                  appropriate zoning district — for example, residential,
-                  commercial, industrial, or mixed-use zones. Choosing the
-                  correct zoning district ensures compliance and avoids future
-                  legal or planning issues.
+                <p className="text-base md:text-[1.05rem] leading-relaxed text-muted-foreground">
+                  Zoning districts define the types of developments allowed in
+                  specific areas. Select the appropriate district to comply with
+                  Ghanaian planning regulations and ensure your project aligns
+                  with local building laws.
                 </p>
               </div>
+
+              {/* Zoning Cards */}
               <FormField
                 name="zoningDistrictId"
                 control={form.control}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Zoning District</FormLabel>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <FormLabel className="text-lg font-semibold text-foreground mb-2">
+                      Zoning District
+                    </FormLabel>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                       {zoningDistricts.map((district) => {
                         const isSelected =
                           String(field.value) === String(district.id);
@@ -829,25 +834,25 @@ export default function NewApplicationForm({
                             key={district.id}
                             onClick={() => field.onChange(district.id)}
                             className={cn(
-                              "border rounded-xl p-4 cursor-pointer transition-shadow shadow-sm h-fit",
+                              "border rounded-2xl p-6 cursor-pointer transition-all duration-200 shadow-sm h-fit group relative hover:shadow-lg",
                               isSelected
                                 ? "border-primary ring-2 ring-primary bg-muted"
-                                : "hover:shadow-md",
+                                : "bg-white/5",
                             )}
                           >
-                            {/* Header */}
-                            <div className="flex items-center justify-between mb-2">
+                            {/* Header: Name + Code + Color */}
+                            <div className="flex items-center justify-between mb-4">
                               <div>
-                                <h4 className="text-base font-semibold">
+                                <h4 className="text-xl font-bold text-foreground">
                                   {district.name}
                                 </h4>
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-sm text-muted-foreground font-mono uppercase">
                                   {district.code}
                                 </p>
                               </div>
                               {district.color_code && (
                                 <div
-                                  className="h-5 w-5 rounded-full border"
+                                  className="h-6 w-6 rounded-full border shadow-sm"
                                   style={{
                                     backgroundColor: district.color_code,
                                   }}
@@ -858,13 +863,13 @@ export default function NewApplicationForm({
 
                             {/* Description */}
                             {district.description && (
-                              <p className="text-sm text-muted-foreground line-clamp-3 mb-3">
+                              <p className="text-base text-muted-foreground line-clamp-2 mb-5">
                                 {district.description}
                               </p>
                             )}
 
-                            {/* Grid of Key Info */}
-                            <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                            {/* Info Grid */}
+                            <div className="grid grid-cols-2 gap-3 text-sm text-muted-foreground">
                               {district.population_served && (
                                 <div>
                                   <span className="font-medium text-foreground">
@@ -914,39 +919,14 @@ export default function NewApplicationForm({
                                 </div>
                               )}
                               {district.special_notes && (
-                                <div className="col-span-2">
-                                  <span className="font-medium text-foreground">
+                                <div className="col-span-2 bg-primary/10 p-3 rounded text-sm mt-2">
+                                  <span className="font-medium text-primary">
                                     Notes:
                                   </span>{" "}
                                   {district.special_notes}
                                 </div>
                               )}
                             </div>
-                            {/* Spatial Drawing Input */}
-                            {isSelected && (
-                              <div className="mt-4">
-                                <FormField
-                                  name="zoningDistrictSpatial"
-                                  control={form.control}
-                                  render={({ field: spatialField }) => (
-                                    <FormItem>
-                                      <FormLabel>
-                                        Define Your Site Boundary (Draw Polygon)
-                                      </FormLabel>
-                                      <SpatialPolygonInput
-                                        value={spatialField.value}
-                                        onChange={spatialField.onChange}
-                                        center={[
-                                          form.watch("latitude") ?? 0,
-                                          form.watch("longitude") ?? 0,
-                                        ]}
-                                      />
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                              </div>
-                            )}
                           </div>
                         );
                       })}
@@ -957,6 +937,7 @@ export default function NewApplicationForm({
               />
             </motion.div>
           )}
+
           {steps[step] === "Zoning Uses" && (
             <motion.div key="step-2" className="space-y-6">
               <FormField
@@ -975,7 +956,7 @@ export default function NewApplicationForm({
                       <FormLabel className="text-lg font-semibold">
                         Allowable Land Uses
                       </FormLabel>
-                      <p className="text-sm text-gray-500 mb-4">
+                      <p className="text-base text-gray-600 mb-5 leading-relaxed">
                         Select a land use that matches your project. These uses
                         are permitted in the selected zoning district.
                       </p>
@@ -1045,7 +1026,7 @@ export default function NewApplicationForm({
               className="space-y-6"
             >
               <div className="flex items-start gap-3 rounded-md bg-yellow-50 border-l-4 border-yellow-400 p-4 text-sm text-yellow-900 mb-6">
-                <AlertTriangle className="mt-0.5 h-5 w-5 text-yellow-500" />
+                <AlertTriangle className="mt-0.5 h-10 w-10 text-yellow-500" />
                 <div>
                   <p className="font-medium">Please Review Carefully</p>
                   <p>
@@ -1063,15 +1044,22 @@ export default function NewApplicationForm({
                   control={form.control}
                   render={({ field: parcelField }) => (
                     <FormItem>
-                      <FormLabel>Define Property Boundary (Parcel)</FormLabel>
-                      <SpatialPolygonInput
+                      <FormLabel>
+                        Define Property Boundary (Survey Plan)
+                      </FormLabel>
+                      <FormDescription>
+                        Enter the coordinates from your survey plan. The system
+                        supports UTM, local grid, and decimal degree
+                        coordinates.
+                      </FormDescription>
+                      <CoordinateParcelInput
                         value={parcelField.value}
                         onChange={parcelField.onChange}
                         center={[
                           form.watch("latitude") ?? 0,
                           form.watch("longitude") ?? 0,
                         ]}
-                        referencePolygon={form.watch("zoningDistrictSpatial")} // 👈 Overlay reference
+                        referencePolygon={form.watch("zoningDistrictSpatial")} // Overlay reference
                       />
                       <FormMessage />
                     </FormItem>
@@ -1084,20 +1072,26 @@ export default function NewApplicationForm({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>GIS Metadata (Optional)</FormLabel>
+                      <FormDescription>
+                        Add additional metadata information for your parcel
+                        (e.g., soil type, zoning code, etc.)
+                      </FormDescription>
                       <FormControl>
                         <div className="space-y-2">
-                          {Array.isArray(field.value)
-                            ? field.value.map(
-                                (
-                                  entry: { key: string; value: string },
-                                  index: number,
-                                ) => (
-                                  <div
-                                    key={index}
-                                    className="grid grid-cols-2 gap-2"
-                                  >
+                          {Array.isArray(field.value) &&
+                          field.value.length > 0 ? (
+                            field.value.map(
+                              (
+                                entry: { key: string; value: string },
+                                index: number,
+                              ) => (
+                                <div
+                                  key={index}
+                                  className="grid grid-cols-12 gap-2 items-center"
+                                >
+                                  <div className="col-span-5">
                                     <Input
-                                      placeholder="Key"
+                                      placeholder="Key (e.g., Soil Type)"
                                       value={entry.key}
                                       onChange={(e) => {
                                         const updated = [
@@ -1109,8 +1103,10 @@ export default function NewApplicationForm({
                                         field.onChange(updated);
                                       }}
                                     />
+                                  </div>
+                                  <div className="col-span-5">
                                     <Input
-                                      placeholder="Value"
+                                      placeholder="Value (e.g., Clay Loam)"
                                       value={entry.value}
                                       onChange={(e) => {
                                         const updated = [
@@ -1123,9 +1119,36 @@ export default function NewApplicationForm({
                                       }}
                                     />
                                   </div>
-                                ),
-                              )
-                            : null}
+                                  <div className="col-span-2">
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      className="w-full text-red-600 hover:text-red-800 hover:bg-red-50"
+                                      onClick={() => {
+                                        const updated = Array.isArray(
+                                          field.value,
+                                        )
+                                          ? field.value.filter(
+                                              (_, i) => i !== index,
+                                            )
+                                          : [];
+                                        field.onChange(updated);
+                                      }}
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ),
+                            )
+                          ) : (
+                            <div className="text-sm text-gray-500 italic border-2 border-dashed border-gray-200 rounded-lg p-4 text-center">
+                              No metadata entries yet. Click &quot;Add
+                              Metadata&quot; to get started.
+                            </div>
+                          )}
+
                           <Button
                             type="button"
                             variant="outline"
@@ -1138,9 +1161,20 @@ export default function NewApplicationForm({
                                 { key: "", value: "" },
                               ])
                             }
+                            className="w-full"
                           >
-                            + Add Metadata
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Metadata
                           </Button>
+
+                          {/* Summary */}
+                          {Array.isArray(field.value) &&
+                            field.value.length > 0 && (
+                              <div className="text-xs text-gray-500 mt-2">
+                                {field.value.length} metadata{" "}
+                                {field.value.length === 1 ? "entry" : "entries"}
+                              </div>
+                            )}
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -1934,7 +1968,12 @@ export default function NewApplicationForm({
               {/* Payment Action */}
               {!hasPaid && (
                 <div className="flex justify-center">
-                  <Button type="button" size="lg" className="px-8" onClick={handlePayment}>
+                  <Button
+                    type="button"
+                    size="lg"
+                    className="px-8"
+                    onClick={handlePayment}
+                  >
                     Pay ₵{permitType.base_fee}
                   </Button>
                 </div>
@@ -1995,8 +2034,7 @@ export default function NewApplicationForm({
                 (steps[step] === "Project Information" &&
                   (!form.watch("longitude") || !form.watch("latitude"))) ||
                 (steps[step] === "Zoning Districts" &&
-                  (!form.watch("zoningDistrictId") ||
-                    !form.watch("zoningDistrictSpatial"))) ||
+                  !form.watch("zoningDistrictId")) ||
                 (steps[step] === "Zoning Uses" && !form.watch("zoningUseId")) ||
                 (steps[step] === "Technical" &&
                   (!form.watch("estimatedCost") ||
