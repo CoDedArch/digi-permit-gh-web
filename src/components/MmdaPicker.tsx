@@ -131,11 +131,11 @@ export default function MMDAPicker({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-start gap-3 rounded-md bg-blue-50 border-l-4 border-blue-500 p-4 text-sm text-blue-900">
-        <AlertTriangle className="mt-0.5 h-5 w-5 text-blue-500" />
-        <div>
-          <p className="font-medium">Why is this important?</p>
-          <p>
+      <div className="flex items-start gap-4 rounded-md bg-blue-50 border-l-4 border-blue-500 p-5 text-base text-blue-900">
+        <AlertTriangle className="mt-1 h-12 w-12 text-blue-500" />
+        <div className="space-y-2">
+          <p className="font-semibold text-lg">Why is this important?</p>
+          <p className="leading-relaxed">
             The <strong>Metropolitan/Municipal/District Assembly (MMDA)</strong>{" "}
             you select will be responsible for <strong>receiving</strong>,{" "}
             <strong>reviewing</strong>, and <strong>processing</strong> your
