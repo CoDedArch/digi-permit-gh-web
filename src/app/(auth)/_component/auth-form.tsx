@@ -1,18 +1,14 @@
 "use client";
 import DigiLogo from "../../_component/images/digi-logo";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { FcGoogle } from "react-icons/fc";
-import { useRef } from "react";
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 
-// type AuthMode = "login" | "signup";
 type AuthMethod = "email" | "phone" | "google";
 
 const AuthForm = () => {
   const { refetch } = useAuth();
-  // const [authMode, setAuthMode] = useState<AuthMode>("login");
   const router = useRouter();
   const [authMethod, setAuthMethod] = useState<AuthMethod | null>(null);
   const [otpSendSuccess, setOtpSendSuccess] = useState(false);
@@ -36,21 +32,16 @@ const AuthForm = () => {
     index: number,
   ) => {
     const input = e.target.value;
-    const digits = input.replace(/\D/g, "").split("").slice(0, 6); // Only digits, max 6
+    const digits = input.replace(/\D/g, "").split("").slice(0, 6);
 
     if (digits.length === 1) {
-      // Single digit input, update current index
       const newOtp = formData.otp.split("");
       newOtp[index] = digits[0];
       setFormData((prev) => ({ ...prev, otp: newOtp.join("") }));
 
-      // Move to next box
       if (index < 5) otpRefs.current[index + 1]?.focus();
     } else if (digits.length === 6) {
-      // Full OTP pasted
       setFormData((prev) => ({ ...prev, otp: digits.join("") }));
-
-      // Fill inputs and blur last field
       digits.forEach((digit, i) => {
         otpRefs.current[i]?.setSelectionRange(1, 1);
       });
@@ -61,9 +52,8 @@ const AuthForm = () => {
   const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     const pasted = e.clipboardData.getData("Text").replace(/\D/g, "");
     if (pasted.length === 6) {
-      e.preventDefault(); // Stop default paste
+      e.preventDefault();
       setFormData((prev) => ({ ...prev, otp: pasted }));
-
       pasted.split("").forEach((digit, i) => {
         if (otpRefs.current[i]) {
           otpRefs.current[i]!.value = digit;
@@ -94,7 +84,7 @@ const AuthForm = () => {
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, ""); // Remove non-digits
+    const value = e.target.value.replace(/\D/g, "");
     setFormData((prev) => ({ ...prev, phone: value }));
   };
 
@@ -103,71 +93,52 @@ const AuthForm = () => {
     setLoading(true);
     setError("");
 
-    const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL;
-
     try {
-      if (!formData.otp) {
-        // Phase 1: Send OTP
-        const res = await fetch(`${NEXT_PUBLIC_API_URL}auth/send-otp`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+      const endpoint = !formData.otp ? "auth/send-otp" : "auth/verify-otp";
+      const body = !formData.otp
+        ? {
             contact: authMethod === "phone" ? formData.phone : formData.email,
             channel: authMethod === "phone" ? "sms" : "email",
-          }),
-        });
-
-        const data = await res.json();
-        if (!res.ok) {
-          // If the server provides a specific error message, show it
-          const errorMessage =
-            data?.detail ||
-            "Failed to send Verification Code. Please try again.";
-          setError(errorMessage);
-          setSuccess("");
-          return;
-        }
-        setSuccess(data.message);
-        console.log("OTP Sent:", data.message);
-
-        setOtpSendSuccess(true);
-
-        // Reveal OTP input
-        setFormData((prev) => ({ ...prev, otp: "" }));
-      } else {
-        const res = await fetch(`${NEXT_PUBLIC_API_URL}auth/verify-otp`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+          }
+        : {
             contact: authMethod === "phone" ? formData.phone : formData.email,
             otp: formData.otp,
             remember: formData.rememberMe,
-          }),
-          credentials: "include",
-        });
+          };
 
-        const data = await res.json();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        credentials: endpoint === "auth/verify-otp" ? "include" : undefined,
+      });
 
-        if (!res.ok) {
-          // If the server provides a specific error message, show it
-          const errorMessage =
-            data?.detail || "OTP verification failed. Please try again.";
-          if (data?.detail === "OTP has expired.") {
-            setOtpHasExpired(true);
-            setOtpSendSuccess(false);
-            formData.otp = "";
-          }
-          setError(errorMessage);
-          setSuccess("");
-          return;
+      const data = await res.json();
+
+      if (!res.ok) {
+        const errorMessage =
+          data?.detail ||
+          (endpoint === "auth/send-otp"
+            ? "Failed to send Verification Code"
+            : "OTP verification failed");
+
+        if (data?.detail === "OTP has expired.") {
+          setOtpHasExpired(true);
+          setOtpSendSuccess(false);
+          setFormData((prev) => ({ ...prev, otp: "" }));
         }
-        console.log("After Verification", data);
-        setOtpVerifiedSuccess(true);
-        setSuccess(data.message);
-        setIsOnboarding(data.onboarding);
+        setError(errorMessage);
+        return;
       }
 
-      // You can handle email/Google methods separately if needed
+      if (endpoint === "auth/send-otp") {
+        setOtpSendSuccess(true);
+        setSuccess(data.message);
+      } else {
+        setOtpVerifiedSuccess(true);
+        setIsOnboarding(data.onboarding);
+        setSuccess(data.message);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -175,55 +146,48 @@ const AuthForm = () => {
     }
   };
 
-  // const toggleAuthMode = () => {
-  //   setAuthMode((prev) => (prev === "login" ? "signup" : "login"));
-  //   setAuthMethod(null);
-  //   setFormData({ email: "", phone: "", otp: "" });
-  //   setError("");
-  // };
   useEffect(() => {
     if (formData.otp.trim() === "" && otpRefs.current[0]) {
       otpRefs.current[0].focus();
     }
   }, [formData.otp]);
 
-  //redirect to onboarding if user is first time user
   useEffect(() => {
     if (otpVerifiedSuccess) {
       const contact = authMethod === "phone" ? formData.phone : formData.email;
-      // Add a small delay to ensure cookie is set
       const timer = setTimeout(() => {
         refetch().then(() => {
-          if (isOnboarding) {
-            router.push(
-              `/onboarding?method=${authMethod}&contact=${encodeURIComponent(
-                contact,
-              )}`,
-            );
-          } else {
-            router.push("/");
-          }
+          router.push(
+            isOnboarding
+              ? `/onboarding?method=${authMethod}&contact=${encodeURIComponent(
+                  contact,
+                )}`
+              : "/",
+          );
         });
-      }, 1000); // 1000ms delay
+      }, 1000);
 
       return () => clearTimeout(timer);
     }
   }, [otpVerifiedSuccess, isOnboarding, router, refetch, authMethod, formData]);
 
   return (
-    <div className="min-h-screen flex-1 flex items-center justify-center p-4 bg-gradient-to-br from-blue-50/20 to-purple-50/ rounded-2xl">
+    <div className="min-h-screen flex-1 flex items-center justify-center p-4">
       <div className="bg-white backdrop-blur-lg p-8 rounded-2xl shadow-xl w-full max-w-md border border-gray-100">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">
-            <span className="flex items-center justify-center gap-2">
-              <DigiLogo />
+          <div className="flex items-center justify-center gap-3">
+            <DigiLogo />
+            <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
               Digi-Permit
             </span>
-          </h1>
-          <p className="text-gray-600">
-            Create an account or log in to discover <b>Digi-Permit</b> and{" "}
-            <span className="text-blue-600">streamline</span> your{" "}
-            <i>Building permit Application in minutes.</i>
+          </div>
+          <p className="text-gray-600 text-sm md:text-base leading-relaxed">
+            Start your journey with <b className="text-gray-800">Digi-Permit</b>{" "}
+            — the smarter, faster way to handle your{" "}
+            <span className="text-blue-600 font-semibold">
+              building permit application
+            </span>
+            . Create an account or log in and <i>get approved in minutes</i>.
           </p>
         </div>
 
@@ -237,6 +201,7 @@ const AuthForm = () => {
             {success}
           </div>
         )}
+
         {authMethod === null ? (
           <div className="space-y-4">
             <button
@@ -341,43 +306,43 @@ const AuthForm = () => {
                   >
                     Phone Number
                   </label>
-                  <div className="relative  justify-between flex">
-                    <div className="inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                      <div className="flex items-center gap-2 bg-gray-100 px-2 py-1 rounded-l-lg">
+                  <div className="relative flex">
+                    {/* Country Code Prefix */}
+                    <div className="absolute inset-y-0 left-0 flex items-center">
+                      <div className="flex items-center gap-2 bg-gray-100 px-3 py-2 rounded-l-xl h-full border border-r-0 border-gray-300">
                         <img
                           src="https://flagcdn.com/w20/gh.png"
                           alt="Ghana flag"
                           className="w-5 h-3.5 rounded-sm"
                         />
-                        <span className="text-gray-700 text-sm">+233</span>
+                        <span className="text-gray-700 text-sm font-medium">
+                          +233
+                        </span>
                       </div>
                     </div>
-                    <div className="">
-                      <input
-                        id="phone"
-                        name="phone"
-                        type="tel"
-                        value={formData.phone}
-                        onChange={handlePhoneChange}
-                        required
-                        className="w-full pl-20 px-4 py-3 border text-gray-900 border-gray-300 rounded-xl focus:ring-2 ring-blue-500 focus:border-blue-500 outline-none transition"
-                        placeholder="24 123 4567"
-                        disabled={loading}
-                        pattern="[0-9]{9,10}"
-                        title="Enter 9-10 digit Ghanaian phone number"
-                      />
-                    </div>
+
+                    {/* Phone Input */}
+                    <input
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      value={formData.phone}
+                      onChange={handlePhoneChange}
+                      required
+                      className="w-full pl-[95px] pr-4 py-3 border text-gray-900 border-gray-300 rounded-xl focus:ring-2 ring-blue-500 focus:border-blue-500 outline-none transition"
+                      placeholder="24 123 4567"
+                      disabled={loading}
+                      pattern="[0-9]{9,10}"
+                      title="Enter 9-10 digit Ghanaian phone number"
+                    />
                   </div>
+
                   <p className="mt-1 text-xs text-gray-500">
                     Enter your Ghanaian phone number without the country code
                   </p>
                 </div>
               )
             ) : (
-              ""
-            )}
-
-            {otpSendSuccess && (
               <div>
                 <label
                   htmlFor="otp"
@@ -392,7 +357,7 @@ const AuthForm = () => {
                       type="text"
                       inputMode="numeric"
                       maxLength={1}
-                      className="w-12 h-12 text-center text-xl border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-12 h-12 text-center text-black text-xl border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       value={formData.otp[i] || ""}
                       onChange={(e) => handleOtpChange(e, i)}
                       onPaste={handleOtpPaste}
@@ -482,6 +447,7 @@ const AuthForm = () => {
                 });
                 setSuccess("");
                 setError("");
+                setOtpSendSuccess(false);
               }}
               className="w-full text-center text-blue-600 hover:underline text-sm"
             >
@@ -489,18 +455,6 @@ const AuthForm = () => {
             </button>
           </form>
         )}
-
-        {/* <div className="mt-6 text-center text-sm text-gray-600">
-          {authMode === "login"
-            ? "Don't have an account?"
-            : "Already have an account?"}{" "}
-          <button
-            onClick={toggleAuthMode}
-            className="text-blue-600 hover:underline font-medium"
-          >
-            {authMode === "login" ? "Sign up" : "Log in"}
-          </button>
-        </div> */}
       </div>
     </div>
   );
