@@ -16,6 +16,7 @@ import {
   fetchApplicationDetail,
 } from "@/app/data/queries";
 import { AlertCircle, FileText } from "lucide-react";
+import Link from "next/link";
 
 const cleanNumericDict = (
   obj?: Record<string, any>,

@@ -218,10 +218,8 @@ export default function NewApplicationForm({
     },
   });
 
-  const selectedZoningDistrictId = useWatch({
-    control: form.control,
-    name: "zoningDistrictId",
-  });
+  // Replace useWatch with getValues when you just need the current value
+  const selectedZoningDistrictId = form.getValues("zoningDistrictId");
 
   const selectedZoningDistrict = zoningDistricts.find(
     (zd) => String(zd.id) === String(selectedZoningDistrictId),
@@ -384,31 +382,82 @@ export default function NewApplicationForm({
 
   // Explicitly type MapPreview props and cast MapContainer props to any to avoid type error
 
-  const formatParcelNumber = (value: string) => {
-    // Remove all non-alphanumeric characters
-    const cleaned = value.replace(/[^a-zA-Z0-9]/g, "");
+  const formatGhanaParcelNumber = (value: string) => {
+    // Remove all non-alphanumeric characters except forward slashes (used in Ghana format)
+    const cleaned = value.replace(/[^a-zA-Z0-9\/]/g, "").toUpperCase();
 
-    // Common parcel number formats:
-    if (cleaned.length <= 3) {
+    // Handle different Ghana parcel number formats
+
+    // Digital Address Format: GA-544-5028 (2 letters + numbers)
+    if (/^[A-Z]{2}/.test(cleaned)) {
+      if (cleaned.length <= 2) {
+        return cleaned;
+      } else if (cleaned.length <= 5) {
+        return `${cleaned.slice(0, 2)}-${cleaned.slice(2)}`;
+      } else if (cleaned.length <= 8) {
+        return `${cleaned.slice(0, 2)}-${cleaned.slice(2, 5)}-${cleaned.slice(
+          5,
+        )}`;
+      } else {
+        return `${cleaned.slice(0, 2)}-${cleaned.slice(2, 5)}-${cleaned.slice(
+          5,
+          9,
+        )}`;
+      }
+    }
+
+    // Traditional Format with slashes: GA/ACCRA/TEMA/BLOCK5/PLOT23
+    if (cleaned.includes("/")) {
+      // Keep the slash format but ensure proper structure
+      const parts = cleaned.split("/");
+      return parts.join("/");
+    }
+
+    // Land Title Certificate Format: GA12345/2020 or similar
+    if (/^[A-Z]+\d+$/.test(cleaned)) {
+      const letters = cleaned.match(/^[A-Z]+/)?.[0] || "";
+      const numbers = cleaned.slice(letters.length);
+
+      if (numbers.length <= 5) {
+        return `${letters}${numbers}`;
+      } else {
+        // Split longer numbers for readability: GA12345/2020 style
+        return `${letters}${numbers.slice(0, 5)}/${numbers.slice(5)}`;
+      }
+    }
+
+    // Numeric-only formats (Plot numbers, etc.)
+    if (/^\d+$/.test(cleaned)) {
+      if (cleaned.length <= 3) {
+        return cleaned;
+      } else if (cleaned.length <= 6) {
+        return `${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
+      } else if (cleaned.length <= 9) {
+        return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(
+          6,
+        )}`;
+      } else {
+        return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(
+          6,
+          9,
+        )}-${cleaned.slice(9)}`;
+      }
+    }
+
+    // Mixed alphanumeric formats
+    if (cleaned.length <= 4) {
       return cleaned;
-    } else if (cleaned.length <= 6) {
-      return `${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
-    } else if (cleaned.length <= 9) {
-      return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(
-        6,
-      )}`;
+    } else if (cleaned.length <= 8) {
+      return `${cleaned.slice(0, 4)}-${cleaned.slice(4)}`;
     } else {
-      // For longer IDs (e.g. APN formats like 123-456-789-00)
-      return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(
-        6,
-        9,
-      )}-${cleaned.slice(9, 11)}`;
+      return `${cleaned.slice(0, 4)}-${cleaned.slice(4, 8)}-${cleaned.slice(
+        8,
+      )}`;
     }
   };
-
-  useEffect(() => {
-    console.log("Current form errors:", form.formState.errors);
-  }, [form.formState.errors]);
+  // useEffect(() => {
+  //   console.log("Current form errors:", form.formState.errors);
+  // }, [form.formState.errors]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -443,7 +492,7 @@ export default function NewApplicationForm({
         form.setValue("zoningUseId", undefined);
       }
     }
-  }, [permitType.id]);
+  }, [permitType.id, form]);
 
   useEffect(() => {
     const saved = localStorage.getItem("pendingApplication");
@@ -558,20 +607,19 @@ export default function NewApplicationForm({
                   control={form.control}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Parcel Number (APN)</FormLabel>
+                      <FormLabel>Parcel Number</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
-                          placeholder="e.g. 123-456-789"
+                          placeholder="e.g. GA-544-5028, GA/ACCRA/TEMA/BLOCK5/PLOT23"
                           onChange={(e) => {
-                            const formatted = formatParcelNumber(
+                            const formatted = formatGhanaParcelNumber(
                               e.target.value,
                             );
                             field.onChange(formatted);
                           }}
                           onBlur={(e) => {
-                            // Ensure proper formatting on blur
-                            const formatted = formatParcelNumber(
+                            const formatted = formatGhanaParcelNumber(
                               e.target.value,
                             );
                             field.onChange(formatted);
@@ -579,30 +627,39 @@ export default function NewApplicationForm({
                         />
                       </FormControl>
                       <FormMessage />
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Format: XXX-XXX-XXX or XX-XXX-XX-XXX
+                      <div className="text-xs text-muted-foreground mt-1 space-y-1">
+                        <div>Accepts multiple formats:</div>
+                        <div>• Digital Address: GA-544-5028</div>
+                        <div>• Traditional: GA/ACCRA/TEMA/BLOCK5/PLOT23</div>
+                        <div>• Land Title: GA12345/2020</div>
+                        <div>• Plot Numbers: 123-456-789</div>
                       </div>
                     </FormItem>
                   )}
                 />
+
                 <FormField
                   name="projectDescription"
                   control={form.control}
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Description{" "}
+                        Project Story{" "}
                         <span className="text-muted-foreground">
-                          (Recommended)
+                          (Help us understand your vision)
                         </span>
                       </FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="Briefly describe your project to help reviewers understand it better"
+                          placeholder="What's your vision? Residential development, commercial space, community project..."
                           {...field}
                         />
                       </FormControl>
                       <FormMessage />
+                      <div className="text-xs text-muted-foreground mt-1">
+                        💡 Share your project&apos;s purpose to help reviewers
+                        provide better guidance
+                      </div>
                     </FormItem>
                   )}
                 />
@@ -1049,7 +1106,7 @@ export default function NewApplicationForm({
                       </FormLabel>
                       <FormDescription>
                         Enter the coordinates from your survey plan. The system
-                        supports UTM, local grid, and decimal degree
+                        supports UTM and decimal degree
                         coordinates.
                       </FormDescription>
                       <CoordinateParcelInput
