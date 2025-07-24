@@ -148,7 +148,7 @@ export function InspectionMapOverlay({ items }: { items: DashboardItem[] }) {
                         : item.inspection_type?.name || "N/A"}
                     </div>
                     {isPersonal && (
-                      <div className="text-purple-600">(Your Inspection)</div>
+                      <div className="text-purple-600">(Your Application)</div>
                     )}
                   </div>
                 </Tooltip>
@@ -171,9 +171,9 @@ export function InspectionMapOverlay({ items }: { items: DashboardItem[] }) {
                   click: () =>
                     router.push(
                       isApplication
-                        ? `/applications/${item.application_id}`
+                        ? `/applications/${item.application_id || item.id}`
                         : isPersonal
-                        ? `/my-inspections/${item.id}`
+                        ? `/my-applications/${item.id}`
                         : `/inspections/${item.id}`,
                     ),
                 }}
@@ -186,7 +186,7 @@ export function InspectionMapOverlay({ items }: { items: DashboardItem[] }) {
                     </div>
                     {isPersonal && (
                       <div className="text-purple-600 font-medium">
-                        Your {isApplication ? "Application" : "Inspection"}
+                        Your Application
                       </div>
                     )}
                     <div className="text-gray-600">
@@ -220,23 +220,28 @@ function MMDABoundariesOverlay({ mmdas }: { mmdas: MMDA[] }) {
     <>
       {mmdas.map(
         (mmda, i) =>
-          mmda.jurisdiction_boundaries.type === "Polygon" &&
-          (mmda.jurisdiction_boundaries as geoPoly).coordinates[0] && (
+          mmda.jurisdiction_boundaries?.type === "Polygon" &&
+          (mmda.jurisdiction_boundaries as geoPoly).coordinates?.[0] && (
             <Polygon
               key={`mmda-${i}`}
               positions={(
                 mmda.jurisdiction_boundaries as geoPoly
-              ).coordinates.map(
-                (ring) =>
-                  ring.map(([lng, lat]) => [lat, lng] as [number, number]), // convert each ring
+              ).coordinates.map((ring) =>
+                ring.map(([lng, lat]) => [lat, lng] as [number, number]),
               )}
-              pathOptions={{ color: "orange", fillOpacity: 0.2 }}
+              pathOptions={{
+                color: "#f97316",
+                fillOpacity: 0.1,
+                weight: 2,
+                dashArray: "10,5",
+              }}
             >
               <Tooltip sticky permanent direction="center" offset={[0, 0]}>
-                <div className="text-xs space-y-1">
+                <div className="text-xs space-y-1 bg-white/95 p-2 rounded shadow-md">
                   <div className="font-semibold text-gray-800">{mmda.name}</div>
                   <div className="text-gray-600">Region: {mmda.region}</div>
-                  <div className="flex flex-col gap-0.5">
+                  <div className="text-gray-600">Type: {mmda.type}</div>
+                  <div className="flex flex-col gap-0.5 mt-1">
                     <div className="flex items-center gap-1 text-gray-500">
                       <Clock className="w-3 h-3" /> {mmda.status_counts.pending}{" "}
                       Pending
@@ -263,6 +268,14 @@ function MMDABoundariesOverlay({ mmdas }: { mmdas: MMDA[] }) {
                       Inspection
                     </div>
                   </div>
+                  <div className="text-xs text-gray-500 mt-1 pt-1 border-t">
+                    Total:{" "}
+                    {Object.values(mmda.status_counts).reduce(
+                      (a, b) => a + b,
+                      0,
+                    )}{" "}
+                    inspections
+                  </div>
                 </div>
               </Tooltip>
             </Polygon>
@@ -275,21 +288,113 @@ function MMDABoundariesOverlay({ mmdas }: { mmdas: MMDA[] }) {
 export default function InspectorDashboardMap({
   items,
   mmdas,
+  inspectorMmdaId, // Add this prop to identify inspector's work MMDA
 }: {
   items: PermitApplication[];
   mmdas: MMDA[];
+  inspectorMmdaId?: number;
 }) {
-  const defaultCenter: [number, number] = items.length
-    ? [items[0].latitude || 5.6, items[0].longitude || -0.2]
-    : [5.6, -0.2];
+  // Calculate center based on inspector's work MMDA or work applications
+  const calculateMapCenter = (): [number, number] => {
+    // First priority: Use inspector's work MMDA boundaries if available
+    if (inspectorMmdaId) {
+      const inspectorMmda = mmdas.find(m => m.id === inspectorMmdaId);
+      if (inspectorMmda?.jurisdiction_boundaries?.type === "Polygon") {
+        try {
+          const center = turf.center(inspectorMmda.jurisdiction_boundaries);
+          return center.geometry.coordinates.slice().reverse() as [number, number];
+        } catch (error) {
+          console.warn("Error calculating MMDA center:", error);
+        }
+      }
+    }
+
+    // Second priority: Use work applications (non-personal) from inspector's MMDA
+    const workApplications = items.filter(item => 
+      !item.is_personal && item.mmda_id === inspectorMmdaId
+    );
+    
+    if (workApplications.length > 0) {
+      const validWorkApps = workApplications.filter(app => 
+        app.latitude != null && app.longitude != null
+      );
+      
+      if (validWorkApps.length > 0) {
+        // Calculate average position of work applications
+        const avgLat = validWorkApps.reduce((sum, app) => sum + (app.latitude || 0), 0) / validWorkApps.length;
+        const avgLng = validWorkApps.reduce((sum, app) => sum + (app.longitude || 0), 0) / validWorkApps.length;
+        return [avgLat, avgLng];
+      }
+    }
+
+    // Third priority: Use any applications with coordinates
+    const appsWithCoords = items.filter(item => 
+      item.latitude != null && item.longitude != null
+    );
+    
+    if (appsWithCoords.length > 0) {
+      return [appsWithCoords[0].latitude!, appsWithCoords[0].longitude!];
+    }
+
+    // Fourth priority: Use any MMDA boundary center
+    for (const mmda of mmdas) {
+      if (mmda.jurisdiction_boundaries?.type === "Polygon") {
+        try {
+          const center = turf.center(mmda.jurisdiction_boundaries);
+          return center.geometry.coordinates.slice().reverse() as [number, number];
+        } catch (error) {
+          continue;
+        }
+      }
+    }
+
+    // Default fallback: Ghana center
+    return [5.6, -0.2];
+  };
+
+  const mapCenter = calculateMapCenter();
+  
+  // Calculate appropriate zoom level based on MMDA size
+  const calculateZoom = (): number => {
+    if (inspectorMmdaId) {
+      const inspectorMmda = mmdas.find(m => m.id === inspectorMmdaId);
+      if (inspectorMmda?.jurisdiction_boundaries?.type === "Polygon") {
+        try {
+          const bbox = turf.bbox(inspectorMmda.jurisdiction_boundaries);
+          const [minLng, minLat, maxLng, maxLat] = bbox;
+          
+          // Calculate rough area to determine zoom
+          const latDiff = maxLat - minLat;
+          const lngDiff = maxLng - minLng;
+          const maxDiff = Math.max(latDiff, lngDiff);
+          
+          // Adjust zoom based on area size
+          if (maxDiff < 0.1) return 13; // Very small area
+          if (maxDiff < 0.5) return 11; // Small area
+          if (maxDiff < 1.0) return 10; // Medium area
+          if (maxDiff < 2.0) return 9;  // Large area
+          return 8; // Very large area
+        } catch (error) {
+          console.warn("Error calculating zoom level:", error);
+        }
+      }
+    }
+    return 10; // Default zoom
+  };
+
+  const mapZoom = calculateZoom();
 
   return (
-    <div className="h-[75vh] rounded-lg overflow-hidden border">
+    <div className="h-[75vh] rounded-lg overflow-hidden border shadow-sm">
       <MapContainer
-        center={defaultCenter}
-        zoom={11}
+        center={mapCenter}
+        zoom={mapZoom}
         scrollWheelZoom={false}
         className="h-full w-full"
+        style={{
+          zIndex: 0,
+          position: "relative",
+        }}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -297,16 +402,51 @@ export default function InspectorDashboardMap({
         />
 
         <FeatureGroup>
+          {/* Layer order: MMDA boundaries (bottom), then applications (top) */}
+          <MMDABoundariesOverlay mmdas={mmdas} />
           <InspectionMapOverlay
             items={items.map((item) => ({
               ...item,
               type: "application",
             }))}
           />
-
-          <MMDABoundariesOverlay mmdas={mmdas} />
         </FeatureGroup>
       </MapContainer>
+
+      {/* Map Legend */}
+      <div className="absolute bottom-4 left-4 bg-white/95 p-3 rounded-lg shadow-md text-xs z-[1000]">
+        <div className="font-semibold mb-2">Inspection Map Legend</div>
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-gray-500"></div>
+            <span>Pending Inspection</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+            <span>Scheduled</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+            <span>In Progress</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-green-600"></div>
+            <span>Completed</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-red-500"></div>
+            <span>Cancelled</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-purple-600"></div>
+            <span>Awaiting Inspection / Your Personal</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-1 bg-orange-500"></div>
+            <span>MMDA Boundaries</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

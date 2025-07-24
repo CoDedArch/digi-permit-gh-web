@@ -61,7 +61,7 @@ export default function SpatialPolygonInput({
   onChange,
   center,
   referencePolygon,
-  readonly = false, // Default to false
+  readonly = true, // Default to false
 }: SpatialPolygonInputProps) {
   return (
     <div className="h-64 w-full rounded-md overflow-hidden border">
