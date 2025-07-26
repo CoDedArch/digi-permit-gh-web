@@ -29,6 +29,14 @@ import {
   Flag,
   DollarSign,
   Activity,
+  Camera,
+  AlertTriangle,
+  CheckCircle2,
+  FileCheck,
+  User,
+  Eye,
+  Loader2,
+  ChevronsUpDown,
 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -38,6 +46,7 @@ import {
   FormLabel,
   FormControl,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -86,6 +95,14 @@ import {
 } from "@/lib/utils";
 import { CoordinateTable } from "@/components/CoordinateTable";
 import { ComplianceIndicator } from "@/components/ComplianceIndicator";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
 
 const MapPreview = dynamic(() => import("@/components/MapPreview"), {
   ssr: false,
@@ -102,11 +119,60 @@ const ComplianceMap = dynamic(() => import("@/components/ComplianceMap"), {
   ssr: false,
 });
 
+const INSPECTION_TYPES = [
+  { value: "site", label: "Site Inspection" },
+  { value: "foundation", label: "Foundation Inspection" },
+  { value: "framing", label: "Framing Inspection" },
+  { value: "electrical", label: "Electrical Inspection" },
+  { value: "plumbing", label: "Plumbing Inspection" },
+  { value: "final", label: "Final Inspection" },
+  { value: "special", label: "Special Inspection" },
+  { value: "initial", label: "Initial Inspection" },
+  { value: "follow_up", label: "Follow-up Inspection" },
+  { value: "compliance", label: "Compliance Inspection" },
+  { value: "safety", label: "Safety Inspection" },
+  { value: "reinspection", label: "Reinspection" },
+] as const;
+
 type SetbackSides = "front" | "sides" | "rear";
 interface Setbacks {
   front?: number;
   sides?: number;
   rear?: number;
+}
+
+interface InspectionPhoto {
+  id: number;
+  file_path: string;
+  caption?: string;
+  uploaded_at: string;
+  uploaded_by?: {
+    id: number;
+    first_name: string;
+    last_name: string;
+  };
+}
+
+interface InspectionDetail {
+  id: number;
+  inspection_type: string;
+  status: string;
+  outcome?: string;
+  scheduled_date?: string;
+  actual_date?: string;
+  notes?: string;
+  findings?: string;
+  recommendations?: string;
+  violations_found?: string;
+  is_reinspection: boolean;
+  special_instructions?: string;
+  inspection_officer?: {
+    id: number;
+    first_name: string;
+    last_name: string;
+    phone?: string;
+  };
+  photos?: InspectionPhoto[];
 }
 
 const SHORT_FORM_TYPES = [
@@ -153,6 +219,34 @@ const flagSchema = z.object({
   reason: z.string().min(1, "Please provide a reason for flagging"),
 });
 
+const inspectionScheduleSchema = z.object({
+  inspectionDate: z.date({
+    required_error: "Please select an inspection date",
+  }),
+  inspectionType: z.enum(
+    [
+      "site",
+      "foundation",
+      "framing",
+      "electrical",
+      "plumbing",
+      "final",
+      "special",
+      "initial",
+      "follow_up",
+      "compliance",
+      "safety",
+      "reinspection",
+    ],
+    {
+      required_error: "Please select an inspection type",
+    },
+  ),
+  inspectionNotes: z.string().optional(),
+  specialInstructions: z.string().optional(),
+  isReinspection: z.boolean().default(false),
+});
+
 // Helper functions to implement the above options
 
 export default function PermitReviewPage() {
@@ -162,14 +256,24 @@ export default function PermitReviewPage() {
   const [application, setApplication] = useState<PermitApplication | null>(
     null,
   );
+  const [inspectionDetail, setInspectionDetail] =
+    useState<InspectionDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingInspection, setLoadingInspection] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [needsReviewStatusUpdate, setNeedsReviewStatusUpdate] = useState(false);
   const [isSettingUnderReview, setIsSettingUnderReview] = useState(false);
+  const [isSchedulingInspection, setIsSchedulingInspection] = useState(false);
   const [isFlagging, setIsFlagging] = useState(false);
   const [isShortPermit, setIsShortPermit] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false);
+  const [nextStep, setNextStep] = useState<string | null>(null);
+  const [completedStepNames, setCompletedStepNames] = useState<string[]>([]);
+  const [flaggedStepNames, setFlaggedStepNames] = useState<string[]>([]);
+  // Add this state to track if we've loaded all initial data
+const [initialDataLoaded, setInitialDataLoaded] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(reviewSchema),
@@ -188,62 +292,168 @@ export default function PermitReviewPage() {
     },
   });
 
-  useEffect(() => {
-    async function fetchApplication() {
-      try {
-        const data = await getPermitApplicationById(Number(permitId));
+  const inspectionForm = useForm({
+    resolver: zodResolver(inspectionScheduleSchema),
+    defaultValues: {
+      inspectionDate: undefined,
+      inspectionType: undefined, // Add this
+      inspectionNotes: "",
+      specialInstructions: "",
+      isReinspection: false,
+    },
+  });
 
-        console.log("Floor Areas ARE: ", data?.floor_areas);
-        setApplication(data);
+  const fetchInspectionDetails = async (applicationId: string) => {
+    try {
+      setLoadingInspection(true);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}inspections/application/${applicationId}`,
+        {
+          method: "GET",
+          credentials: "include",
+        },
+      );
 
-        setNeedsReviewStatusUpdate(
-          data?.status !== ApplicationStatus.UNDER_REVIEW &&
-            data?.status !== ApplicationStatus.ADDITIONAL_INFO_REQUESTED,
-        );
-
-        form.reset({
-          status: data?.status ?? ApplicationStatus.UNDER_REVIEW,
-          comments: "",
-          requiredChanges: "",
-          nextSteps: "",
-        });
-      } catch (error) {
-        toast.error("Failed to load permit application");
-        router.push("/revi/dashboard");
-      } finally {
-        setLoading(false);
+      if (response.ok) {
+        const data = await response.json();
+        setInspectionDetail(data);
+      } else if (response.status === 404) {
+        // No inspection found - this is normal
+        setInspectionDetail(null);
+      } else {
+        console.error("Failed to fetch inspection details");
       }
+    } catch (error) {
+      console.error("Error fetching inspection details:", error);
+    } finally {
+      setLoadingInspection(false);
     }
+  };
 
-    if (permitId) {
-      fetchApplication();
+  useEffect(() => {
+  async function fetchApplication() {
+    try {
+      const data = await getPermitApplicationById(Number(permitId));
+      setApplication(data);
+
+      const needsReviewUpdate = 
+        data?.status !== ApplicationStatus.UNDER_REVIEW &&
+        data?.status !== ApplicationStatus.ADDITIONAL_INFO_REQUESTED &&
+        data?.status !== ApplicationStatus.INSPECTION_PENDING &&
+        data?.status !== ApplicationStatus.INSPECTION_COMPLETED &&
+        data?.status !== ApplicationStatus.REJECTED &&
+        data?.status !== ApplicationStatus.APPROVED &&
+        data?.status !== ApplicationStatus.COMPLETED &&
+        data?.status !== ApplicationStatus.CANCELLED;
+
+      setNeedsReviewStatusUpdate(needsReviewUpdate);
+
+      form.reset({
+        status: data?.status ?? ApplicationStatus.UNDER_REVIEW,
+        comments: "",
+        requiredChanges: "",
+        nextSteps: "",
+      });
+
+      if (data?.id) {
+        // Fetch inspection details
+        await fetchInspectionDetails(data.id.toString());
+        
+        // Fetch review progress
+        const progressResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}reviews/review-progress/${data.id}`,
+          { credentials: "include" }
+        );
+        
+        if (progressResponse.ok) {
+          const progress = await progressResponse.json();
+          setNextStep(progress.next_step);
+          setCompletedStepNames(progress.completed_steps);
+          setFlaggedStepNames(progress.flagged_steps);
+
+          // Calculate steps based on current data
+          const calculatedSteps = getSteps(data, needsReviewUpdate);
+          
+          console.log("Calculated steps:", calculatedSteps);
+          console.log("Completed steps:", progress.completed_steps);
+          
+          // Determine initial step
+          let initialStep = 0;
+          
+          // If we have completed steps but no explicit next_step,
+          // set to the step after the last completed one
+          if (progress.completed_steps.length > 0) {
+            // Find the last completed step in the sequence
+            let lastCompletedIndex = -1;
+            for (let i = 0; i < calculatedSteps.length; i++) {
+              if (progress.completed_steps.includes(calculatedSteps[i])) {
+                lastCompletedIndex = i;
+              } else {
+                break;
+              }
+            }
+            
+            // Set to next step if not all steps are completed
+            if (lastCompletedIndex < calculatedSteps.length - 1) {
+              initialStep = lastCompletedIndex + 1;
+            } else {
+              initialStep = calculatedSteps.length - 1;
+            }
+          }
+          // If we have an explicit next_step, use that
+          else if (progress.next_step) {
+            const stepIndex = calculatedSteps.findIndex(
+              step => step === progress.next_step
+            );
+            if (stepIndex !== -1) {
+              initialStep = stepIndex;
+            }
+          }
+          // If all steps are completed, go to last step
+          else if (progress.completed_steps.length === calculatedSteps.length) {
+            initialStep = calculatedSteps.length - 1;
+          }
+
+          console.log("Setting current step to:", initialStep, calculatedSteps[initialStep]);
+          setCurrentStep(initialStep);
+        }
+      }
+    } catch (error) {
+      toast.error("Failed to load permit application");
+      router.push("/revi/dashboard");
+    } finally {
+      setLoading(false);
     }
-  }, [permitId, form, router]);
+  }
 
-  const steps = useMemo(() => {
-    if (!application) return [];
+  if (permitId) {
+    fetchApplication();
+  }
+}, [permitId, form, router]);
+
+  // Extract steps calculation to a separate function
+  const getSteps = (app: PermitApplication | null, needsReview: boolean) => {
+    if (!app) return [];
 
     const normalizePermitTypeName = (name: string) =>
       name.toLowerCase().replace(/\s+/g, "_");
 
-    console.log("Permit Application Type is: ", application?.permit_type?.name);
-
-    console.log(
-      "Normalized Permit Application is, ",
-      normalizePermitTypeName(application?.permit_type?.name || ""),
-    );
-
     const isShort = SHORT_FORM_TYPES.includes(
-      normalizePermitTypeName(application?.permit_type?.name || ""),
+      normalizePermitTypeName(app?.permit_type?.name || ""),
     );
 
-    const base = needsReviewStatusUpdate
+    const base = needsReview
       ? ["Set to Under Review", "Overview"]
       : ["Overview"];
 
     if (isShort) {
-      setIsShortPermit(true);
-      return [...base, "Timeline", "Documents", "Decision"];
+      return [
+        ...base,
+        "Timeline",
+        "Documents",
+        "Inspection Results",
+        "Decision",
+      ];
     }
 
     return [
@@ -253,9 +463,61 @@ export default function PermitReviewPage() {
       "Technical Review",
       "Timeline",
       "Documents",
+      "Inspection Results",
       "Decision",
     ];
-  }, [application, needsReviewStatusUpdate]);
+  };
+
+  // Then update your steps memo to use this function
+  const steps = useMemo(
+    () => getSteps(application, needsReviewStatusUpdate),
+    [application, needsReviewStatusUpdate],
+  );
+  useEffect(() => {
+    const fetchReviewProgress = async () => {
+      if (!permitId) return;
+
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}reviews/review-progress/${permitId}`,
+          {
+            credentials: "include",
+          },
+        );
+
+        if (response.ok) {
+          const progress = await response.json();
+          setNextStep(progress.next_step);
+          setCompletedStepNames(progress.completed_steps);
+          setFlaggedStepNames(progress.flagged_steps);
+
+          // Set current step based on next step
+          if (progress.next_step) {
+            const stepIndex = steps.findIndex(
+              (step) => step === progress.next_step,
+            );
+            if (stepIndex !== -1) {
+              setCurrentStep(stepIndex);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch review progress:", error);
+      }
+    };
+
+    if (application) {
+      fetchReviewProgress();
+    }
+  }, [permitId, application, steps]);
+
+  const stepsWithStatus = useMemo(() => {
+    return steps.map((step) => ({
+      name: step,
+      completed: completedStepNames.includes(step),
+      flagged: flaggedStepNames.includes(step),
+    }));
+  }, [steps, completedStepNames, flaggedStepNames]);
 
   const handleStatusChange = async (values: z.infer<typeof reviewSchema>) => {
     try {
@@ -295,6 +557,43 @@ export default function PermitReviewPage() {
     }
   };
 
+  const handleScheduleInspection = async (
+    values: z.infer<typeof inspectionScheduleSchema>,
+  ) => {
+    try {
+      setIsSchedulingInspection(true);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}inspections/reviewer-schedule`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            application_id: Number(permitId),
+            scheduled_date: values.inspectionDate.toISOString(),
+            inspection_type: values.inspectionType, // Add this
+            notes: values.inspectionNotes || "",
+            special_instructions: values.specialInstructions || "",
+            is_reinspection: values.isReinspection,
+          }),
+          credentials: "include",
+        },
+      );
+
+      if (!response.ok) throw new Error("Failed to schedule inspection");
+
+      toast.success("Inspection scheduled successfully");
+      inspectionForm.reset();
+      setIsScheduleDialogOpen(false);
+      await fetchInspectionDetails(permitId);
+    } catch (error) {
+      toast.error("Failed to schedule inspection");
+    } finally {
+      setIsSchedulingInspection(false);
+    }
+  };
+
   const handleSetUnderReview = async () => {
     try {
       setIsSettingUnderReview(true);
@@ -328,25 +627,31 @@ export default function PermitReviewPage() {
   };
 
   const handleCompleteStep = async (stepIndex: number) => {
-    const stepName = steps[stepIndex]; // ["Zoning Compliance", ...]
+    const stepName = steps[stepIndex];
     try {
       await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}applications/reviewer/applications/${permitId}/steps/${stepName}/complete`,
         {
           method: "POST",
-          credentials: "include", // send auth cookies
+          credentials: "include",
         },
       );
 
-      if (!completedSteps.includes(stepIndex)) {
-        setCompletedSteps([...completedSteps, stepIndex]);
-      }
-      setCurrentStep(currentStep + 1);
+      // Update local state
+      setCompletedStepNames((prev) => [...prev, stepName]);
+      setCurrentStep((prev) => {
+        // Find next incomplete step
+        const nextStepIndex = steps.findIndex(
+          (_, i) => i > prev && !completedStepNames.includes(steps[i]),
+        );
+        return nextStepIndex !== -1 ? nextStepIndex : prev + 1;
+      });
     } catch (err) {
       console.error("Failed to mark step complete:", err);
     }
   };
 
+  // Update handleFlagStep to sync with backend
   const handleFlagStep = async (values: z.infer<typeof flagSchema>) => {
     try {
       setIsFlagging(true);
@@ -366,6 +671,7 @@ export default function PermitReviewPage() {
       if (!response.ok) throw new Error("Failed to flag step");
 
       toast.success("Step flagged successfully");
+      setFlaggedStepNames((prev) => [...prev, stepName]);
       flagForm.reset();
     } catch (error) {
       toast.error("Failed to flag step");
@@ -385,8 +691,72 @@ export default function PermitReviewPage() {
     // Decision step is handled by the form submission
     if (steps[stepIndex] === "Decision") return true;
 
+    // Inspection Results step can only be completed if there are inspection results
+    if (steps[stepIndex] === "Inspection Results") {
+      return inspectionDetail && inspectionDetail.status === "completed";
+    }
+
     // Check if current step is completed
     return completedSteps.includes(stepIndex);
+  };
+
+  const getInspectionStatusBadge = (status: string) => {
+    switch (status) {
+      case "scheduled":
+        return (
+          <Badge variant="outline" className="text-blue-600 border-blue-600">
+            Scheduled
+          </Badge>
+        );
+      case "in_progress":
+        return (
+          <Badge
+            variant="outline"
+            className="text-yellow-600 border-yellow-600"
+          >
+            In Progress
+          </Badge>
+        );
+      case "completed":
+        return (
+          <Badge variant="outline" className="text-green-600 border-green-600">
+            Completed
+          </Badge>
+        );
+      case "cancelled":
+        return (
+          <Badge variant="outline" className="text-red-600 border-red-600">
+            Cancelled
+          </Badge>
+        );
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const getOutcomeBadge = (outcome: string) => {
+    switch (outcome) {
+      case "passed":
+        return (
+          <Badge className="bg-green-100 text-green-800 border-green-200">
+            Passed
+          </Badge>
+        );
+      case "failed":
+        return (
+          <Badge className="bg-red-100 text-red-800 border-red-200">
+            Failed
+          </Badge>
+        );
+      case "conditional":
+        return (
+          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
+            Conditional
+          </Badge>
+        );
+      default:
+        return <Badge variant="outline">{outcome}</Badge>;
+    }
   };
 
   if (loading) {
@@ -396,6 +766,49 @@ export default function PermitReviewPage() {
   if (!application) {
     return <div className="p-8 text-center">Application not found</div>;
   }
+
+  const renderStepper = () => (
+    <div className="flex flex-wrap gap-4">
+      {stepsWithStatus.map((step, index) => (
+        <div key={step.name} className="flex items-center gap-2">
+          <div
+            className={cn(
+              "w-8 h-8 rounded-full flex items-center justify-center",
+              currentStep >= index
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted",
+              step.completed
+                ? "bg-green-500 text-white"
+                : step.flagged
+                ? "bg-yellow-500 text-white"
+                : "",
+            )}
+          >
+            {step.completed ? (
+              <Check className="h-4 w-4" />
+            ) : step.flagged ? (
+              <Flag className="h-4 w-4" />
+            ) : (
+              index + 1
+            )}
+          </div>
+          <span
+            className={cn(
+              "text-sm",
+              currentStep >= index ? "font-medium" : "text-muted-foreground",
+              step.completed
+                ? "text-green-600 font-medium"
+                : step.flagged
+                ? "text-yellow-600 font-medium"
+                : "",
+            )}
+          >
+            {step.name}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <div className="p-6 py-8 bg-white min-h-screen">
@@ -421,95 +834,58 @@ export default function PermitReviewPage() {
           </div>
 
           {/* Stepper */}
-          <div className="mb-8">
-            <div className="flex flex-wrap gap-4">
-              {steps.map((label, index) => (
-                <div key={label} className="flex items-center gap-2">
-                  <div
-                    className={cn(
-                      "w-8 h-8 rounded-full flex items-center justify-center",
-                      currentStep >= index
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted",
-                      completedSteps.includes(index)
-                        ? "bg-green-500 text-white"
-                        : "",
-                    )}
-                  >
-                    {completedSteps.includes(index) ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
-                      index + 1
-                    )}
-                  </div>
-                  <span
-                    className={cn(
-                      "text-sm",
-                      currentStep >= index
-                        ? "font-medium"
-                        : "text-muted-foreground",
-                      completedSteps.includes(index)
-                        ? "text-green-600 font-medium"
-                        : "",
-                    )}
-                  >
-                    {label}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
+          <div className="mb-8">{renderStepper()}</div>
 
           {/* Review content */}
           <AnimatePresence mode="wait">
-            {steps[currentStep] === "Set to Under Review" && (
-              <motion.div
-                key="set-under-review"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-6"
-              >
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Clock className="h-5 w-5" />
-                      <span>Set Application to Under Review</span>
-                    </CardTitle>
-                    <CardDescription>
-                      This will change the application status to &quot;Under
-                      Review&quot; and notify the applicant.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <Alert>
-                      <Info className="h-4 w-4" />
-                      <AlertTitle>
-                        Current Status:{" "}
-                        <Badge variant="outline">{application.status}</Badge>
-                      </AlertTitle>
-                      <AlertDescription>
-                        The application must be in &quot;Under Review&quot;
-                        status before proceeding with the review.
-                      </AlertDescription>
-                    </Alert>
+            {steps[currentStep] === "Set to Under Review" &&
+              application.status === "submitted" && (
+                <motion.div
+                  key="set-under-review"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-6"
+                >
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Clock className="h-5 w-5" />
+                        <span>Set Application to Under Review</span>
+                      </CardTitle>
+                      <CardDescription>
+                        This will change the application status to &quot;Under
+                        Review&quot; and notify the applicant.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <Alert>
+                        <Info className="h-4 w-4" />
+                        <AlertTitle>
+                          Current Status:{" "}
+                          <Badge variant="outline">{application.status}</Badge>
+                        </AlertTitle>
+                        <AlertDescription>
+                          The application must be in &quot;Under Review&quot;
+                          status before proceeding with the review.
+                        </AlertDescription>
+                      </Alert>
 
-                    <div className="flex justify-end pt-4">
-                      <Button
-                        onClick={handleSetUnderReview}
-                        disabled={isSettingUnderReview}
-                      >
-                        {isSettingUnderReview
-                          ? "Updating..."
-                          : "Set to Under Review"}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            )}
-
+                      <div className="flex justify-end pt-4">
+                        <Button
+                          onClick={handleSetUnderReview}
+                          disabled={isSettingUnderReview}
+                        >
+                          {isSettingUnderReview
+                            ? "Updating..."
+                            : "Set to Under Review"}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
             {steps[currentStep] === "Overview" && (
               <motion.div
                 key="overview"
@@ -676,7 +1052,12 @@ export default function PermitReviewPage() {
                               >
                                 Cancel
                               </Button>
-                              <Button type="submit" disabled={isFlagging}>
+                              <Button
+                                type="submit"
+                                disabled={
+                                  isFlagging || !flagForm.watch("reason")
+                                }
+                              >
                                 {isFlagging ? "Submitting..." : "Submit Flag"}
                               </Button>
                             </DialogFooter>
@@ -1943,6 +2324,625 @@ export default function PermitReviewPage() {
               </motion.div>
             )}
 
+            {steps[currentStep] === "Inspection Results" && (
+              <motion.div
+                key="inspection-results"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-6"
+              >
+                {loadingInspection ? (
+                  <Card>
+                    <CardContent className="py-8">
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                        <p>Loading inspection details...</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : !inspectionDetail ? (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Eye className="h-5 w-5" />
+                        <span>Inspection Required</span>
+                      </CardTitle>
+                      <CardDescription>
+                        No inspection has been scheduled for this application.
+                        Schedule an inspection to proceed.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <Alert>
+                        <Info className="h-4 w-4" />
+                        <AlertTitle>Next Steps</AlertTitle>
+                        <AlertDescription>
+                          An inspection must be completed before this
+                          application can be finalized. Once you schedule an
+                          inspection, you&apos;ll need to wait for the inspector
+                          to complete it.
+                        </AlertDescription>
+                      </Alert>
+
+                      <div className="flex justify-center pt-4">
+                        <Dialog
+                          open={isScheduleDialogOpen}
+                          onOpenChange={setIsScheduleDialogOpen}
+                        >
+                          <DialogTrigger asChild>
+                            <Button>
+                              <CalendarDays className="h-4 w-4 mr-2" />
+                              Schedule Inspection
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-[425px]">
+                            <DialogHeader>
+                              <DialogTitle className="text-lg font-semibold">
+                                Schedule Inspection
+                              </DialogTitle>
+                              <DialogDescription className="text-sm text-muted-foreground">
+                                Set a date and time for the site inspection
+                              </DialogDescription>
+                            </DialogHeader>
+
+                            <Form {...inspectionForm}>
+                              <form
+                                onSubmit={inspectionForm.handleSubmit(
+                                  handleScheduleInspection,
+                                )}
+                                className="space-y-6"
+                              >
+                                <div className="grid gap-4 py-4">
+                                  {/* Inspection Type Selector */}
+                                  <FormField
+                                    control={inspectionForm.control}
+                                    name="inspectionType"
+                                    render={({ field }) => (
+                                      <FormItem className="flex flex-col">
+                                        <FormLabel>Inspection Type</FormLabel>
+                                        <Popover>
+                                          <PopoverTrigger asChild>
+                                            <FormControl>
+                                              <Button
+                                                variant="outline"
+                                                role="combobox"
+                                                className="w-full justify-between"
+                                              >
+                                                {field.value
+                                                  ? INSPECTION_TYPES.find(
+                                                      (type) =>
+                                                        type.value ===
+                                                        field.value,
+                                                    )?.label
+                                                  : "Select inspection type"}
+                                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                              </Button>
+                                            </FormControl>
+                                          </PopoverTrigger>
+                                          <PopoverContent className="w-[300px] p-0">
+                                            <Command>
+                                              <CommandInput placeholder="Search inspection types..." />
+                                              <CommandEmpty>
+                                                No inspection type found.
+                                              </CommandEmpty>
+                                              <CommandGroup>
+                                                {INSPECTION_TYPES.map(
+                                                  (type) => (
+                                                    <CommandItem
+                                                      value={type.value}
+                                                      key={type.value}
+                                                      onSelect={() => {
+                                                        inspectionForm.setValue(
+                                                          "inspectionType",
+                                                          type.value,
+                                                        );
+                                                      }}
+                                                    >
+                                                      <Check
+                                                        className={cn(
+                                                          "mr-2 h-4 w-4",
+                                                          field.value ===
+                                                            type.value
+                                                            ? "opacity-100"
+                                                            : "opacity-0",
+                                                        )}
+                                                      />
+                                                      {type.label}
+                                                    </CommandItem>
+                                                  ),
+                                                )}
+                                              </CommandGroup>
+                                            </Command>
+                                          </PopoverContent>
+                                        </Popover>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <FormField
+                                    control={inspectionForm.control}
+                                    name="inspectionDate"
+                                    render={({ field }) => (
+                                      <FormItem className="flex flex-col space-y-2">
+                                        <FormLabel className="text-sm font-medium">
+                                          Inspection Date
+                                        </FormLabel>
+                                        <Popover>
+                                          <PopoverTrigger asChild>
+                                            <FormControl>
+                                              <Button
+                                                variant="outline"
+                                                className="w-full justify-start text-left font-normal"
+                                              >
+                                                <CalendarDays className="mr-2 h-4 w-4" />
+                                                {field.value ? (
+                                                  format(field.value, "PPP")
+                                                ) : (
+                                                  <span>Select a date</span>
+                                                )}
+                                              </Button>
+                                            </FormControl>
+                                          </PopoverTrigger>
+                                          <PopoverContent
+                                            className="w-auto p-0 z-[1000] bg-white shadow-lg border border-gray-200"
+                                            align="start"
+                                            side="bottom"
+                                            sideOffset={4}
+                                          >
+                                            <Calendar
+                                              mode="single"
+                                              selected={field.value}
+                                              onSelect={field.onChange}
+                                              disabled={(date) =>
+                                                date < new Date()
+                                              }
+                                              initialFocus
+                                            />
+                                          </PopoverContent>
+                                        </Popover>
+                                        <FormMessage className="text-xs" />
+                                      </FormItem>
+                                    )}
+                                  />
+
+                                  {/* Special Instructions Field */}
+                                  <FormField
+                                    control={inspectionForm.control}
+                                    name="specialInstructions"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>
+                                          Special Instructions
+                                        </FormLabel>
+                                        <FormControl>
+                                          <Textarea
+                                            placeholder="Add any special requirements or instructions for this inspection..."
+                                            className="min-h-[100px]"
+                                            {...field}
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+
+                                  {/* Reinspection Checkbox */}
+                                  <FormField
+                                    control={inspectionForm.control}
+                                    name="isReinspection"
+                                    render={({ field }) => (
+                                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                                        <FormControl>
+                                          <Checkbox
+                                            checked={field.value}
+                                            onCheckedChange={field.onChange}
+                                            className={cn(
+                                              "h-5 w-5 rounded-md border-2 border-gray-300 data-[state=checked]:border-primary",
+                                              "focus:ring-2 focus:ring-primary focus:ring-offset-2",
+                                              "text-primary hover:bg-gray-100",
+                                              "transition-colors duration-200",
+                                            )}
+                                          />
+                                        </FormControl>
+                                        <div className="space-y-1 leading-none">
+                                          <FormLabel>
+                                            This is a re-inspection
+                                          </FormLabel>
+                                          <FormDescription>
+                                            Check if this is a follow-up
+                                            inspection
+                                          </FormDescription>
+                                        </div>
+                                      </FormItem>
+                                    )}
+                                  />
+
+                                  <FormField
+                                    control={inspectionForm.control}
+                                    name="inspectionNotes"
+                                    render={({ field }) => (
+                                      <FormItem className="flex flex-col space-y-2">
+                                        <FormLabel className="text-sm font-medium">
+                                          Notes
+                                        </FormLabel>
+                                        <FormControl>
+                                          <Textarea
+                                            placeholder="Add any special instructions for the inspector..."
+                                            className="min-h-[100px] resize-none"
+                                            {...field}
+                                          />
+                                        </FormControl>
+                                        <FormMessage className="text-xs" />
+                                      </FormItem>
+                                    )}
+                                  />
+                                </div>
+
+                                <DialogFooter className="gap-2 sm:gap-0">
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => {
+                                      inspectionForm.reset();
+                                      setIsScheduleDialogOpen(false);
+                                    }}
+                                  >
+                                    Cancel
+                                  </Button>
+                                  <Button
+                                    type="submit"
+                                    disabled={
+                                      isSchedulingInspection ||
+                                      !inspectionForm.watch("inspectionDate")
+                                    }
+                                    className="min-w-[120px]"
+                                  >
+                                    {isSchedulingInspection ? (
+                                      <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Scheduling...
+                                      </>
+                                    ) : (
+                                      "Schedule Inspection"
+                                    )}
+                                  </Button>
+                                </DialogFooter>
+                              </form>
+                            </Form>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <>
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Eye className="h-5 w-5" />
+                          <span>Inspection Details</span>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="grid gap-4 md:grid-cols-2">
+                        <div className="space-y-4">
+                          <div>
+                            <h4 className="text-sm font-medium text-muted-foreground">
+                              Inspection Type
+                            </h4>
+                            <p className="capitalize">
+                              {inspectionDetail.inspection_type.replace(
+                                "_",
+                                " ",
+                              )}
+                            </p>
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-medium text-muted-foreground">
+                              Status
+                            </h4>
+                            {getInspectionStatusBadge(inspectionDetail.status)}
+                          </div>
+                          {inspectionDetail.outcome && (
+                            <div>
+                              <h4 className="text-sm font-medium text-muted-foreground">
+                                Outcome
+                              </h4>
+                              {getOutcomeBadge(inspectionDetail.outcome)}
+                            </div>
+                          )}
+                          {inspectionDetail.inspection_officer && (
+                            <div>
+                              <h4 className="text-sm font-medium text-muted-foreground">
+                                Inspector
+                              </h4>
+                              <div className="flex items-center gap-2">
+                                <User className="h-4 w-4" />
+                                <span>
+                                  {
+                                    inspectionDetail.inspection_officer
+                                      .first_name
+                                  }{" "}
+                                  {
+                                    inspectionDetail.inspection_officer
+                                      .last_name
+                                  }
+                                </span>
+                              </div>
+                              {inspectionDetail.inspection_officer.phone && (
+                                <p className="text-sm text-muted-foreground">
+                                  {inspectionDetail.inspection_officer.phone}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <div className="space-y-4">
+                          {inspectionDetail.scheduled_date && (
+                            <div>
+                              <h4 className="text-sm font-medium text-muted-foreground">
+                                Scheduled Date
+                              </h4>
+                              <p>
+                                {format(
+                                  new Date(inspectionDetail.scheduled_date),
+                                  "PPP",
+                                )}
+                              </p>
+                            </div>
+                          )}
+                          {inspectionDetail.actual_date && (
+                            <div>
+                              <h4 className="text-sm font-medium text-muted-foreground">
+                                Actual Date
+                              </h4>
+                              <p>
+                                {format(
+                                  new Date(inspectionDetail.actual_date),
+                                  "PPP",
+                                )}
+                              </p>
+                            </div>
+                          )}
+                          {inspectionDetail.is_reinspection && (
+                            <div>
+                              <Alert>
+                                <AlertTriangle className="h-4 w-4" />
+                                <AlertTitle>Re-inspection</AlertTitle>
+                                <AlertDescription>
+                                  This is a follow-up inspection.
+                                </AlertDescription>
+                              </Alert>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {inspectionDetail.findings && (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <FileCheck className="h-5 w-5" />
+                            <span>Inspection Findings</span>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="whitespace-pre-wrap">
+                            {inspectionDetail.findings}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {inspectionDetail.recommendations && (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <CheckCircle2 className="h-5 w-5" />
+                            <span>Recommendations</span>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="whitespace-pre-wrap">
+                            {inspectionDetail.recommendations}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {inspectionDetail.violations_found && (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <AlertTriangle className="h-5 w-5 text-red-500" />
+                            <span>Violations Found</span>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <Alert className="bg-red-50 border-red-200">
+                            <AlertTriangle className="h-4 w-4 text-red-600" />
+                            <AlertDescription className="text-red-700">
+                              {inspectionDetail.violations_found}
+                            </AlertDescription>
+                          </Alert>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {inspectionDetail.notes && (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <FileText className="h-5 w-5" />
+                            <span>Inspector Notes</span>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="whitespace-pre-wrap">
+                            {inspectionDetail.notes}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {inspectionDetail.photos &&
+                      inspectionDetail.photos.length > 0 && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                              <Camera className="h-5 w-5" />
+                              <span>Inspection Photos</span>
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {inspectionDetail.photos
+                                // Filter out duplicates by creating a Set of unique file_paths
+                                .filter(
+                                  (photo, index, self) =>
+                                    index ===
+                                    self.findIndex(
+                                      (p) => p.file_path === photo.file_path,
+                                      // Or use id if you prefer: p.id === photo.id
+                                    ),
+                                )
+                                .map((photo) => (
+                                  <div key={photo.id} className="space-y-2">
+                                    <div className="aspect-square relative rounded-lg overflow-hidden border">
+                                      <img
+                                        src={photo.file_path}
+                                        alt={
+                                          photo.caption || "Inspection photo"
+                                        }
+                                        className="object-cover w-full h-full"
+                                      />
+                                    </div>
+                                    {photo.caption && (
+                                      <p className="text-sm text-muted-foreground">
+                                        {photo.caption}
+                                      </p>
+                                    )}
+                                    {photo.uploaded_by && (
+                                      <p className="text-xs text-muted-foreground">
+                                        By: {photo.uploaded_by.first_name}{" "}
+                                        {photo.uploaded_by.last_name}
+                                      </p>
+                                    )}
+                                    <p className="text-xs text-muted-foreground">
+                                      {format(
+                                        new Date(photo.uploaded_at),
+                                        "PPP",
+                                      )}
+                                    </p>
+                                  </div>
+                                ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                    {inspectionDetail.status !== "completed" && (
+                      <Alert>
+                        <Clock className="h-4 w-4" />
+                        <AlertTitle>Inspection Pending</AlertTitle>
+                        <AlertDescription>
+                          The inspection is {inspectionDetail.status}. You
+                          cannot proceed to the next step until the inspection
+                          is completed by the inspector.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </>
+                )}
+
+                <div className="flex justify-between pt-4">
+                  <Button variant="outline" onClick={handleBackStep}>
+                    Back
+                  </Button>
+                  <div className="flex gap-2">
+                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline">
+                          <Flag className="h-4 w-4 mr-2" />
+                          Flag Issue
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Flag This Step</DialogTitle>
+                          <DialogDescription>
+                            Please provide details about the issue you&apos;ve
+                            found in this step.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <Form {...flagForm}>
+                          <form
+                            onSubmit={flagForm.handleSubmit(handleFlagStep)}
+                            className="space-y-4"
+                          >
+                            <FormField
+                              control={flagForm.control}
+                              name="reason"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Reason for Flagging</FormLabel>
+                                  <FormControl>
+                                    <Textarea
+                                      placeholder="Describe the issue..."
+                                      className="min-h-[100px]"
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <DialogFooter>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => {
+                                  flagForm.reset();
+                                  setIsDialogOpen(false);
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                              <Button type="submit" disabled={isFlagging}>
+                                {isFlagging ? "Submitting..." : "Submit Flag"}
+                              </Button>
+                            </DialogFooter>
+                          </form>
+                        </Form>
+                      </DialogContent>
+                    </Dialog>
+
+                    <Button
+                      onClick={() => handleCompleteStep(currentStep)}
+                      disabled={
+                        completedSteps.includes(currentStep) ||
+                        !inspectionDetail ||
+                        inspectionDetail.status !== "completed"
+                      }
+                    >
+                      {completedSteps.includes(currentStep) ? (
+                        <>
+                          <Check className="mr-2 h-4 w-4" /> Step Completed
+                        </>
+                      ) : inspectionDetail &&
+                        inspectionDetail.status === "completed" ? (
+                        "Complete Inspection Results Review"
+                      ) : (
+                        "Waiting for Inspection Completion"
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
             {steps[currentStep] === "Decision" && (
               <motion.div
                 key="decision"
@@ -1985,15 +2985,15 @@ export default function PermitReviewPage() {
                             label: "Request Info",
                             icon: <Info className="text-yellow-600" />,
                           },
-                          {
-                            value: ApplicationStatus.INSPECTION_PENDING,
-                            label: "Schedule Inspection",
-                          },
-                          {
-                            value: ApplicationStatus.FOR_APPROVAL_OR_REJECTION,
-                            label: "Send for Approval",
-                            icon: <ArrowRight className="text-purple-600" />,
-                          },
+                          // {
+                          //   value: ApplicationStatus.INSPECTION_PENDING,
+                          //   label: "Schedule Inspection",
+                          // },
+                          // {
+                          //   value: ApplicationStatus.FOR_APPROVAL_OR_REJECTION,
+                          //   label: "Send for Approval",
+                          //   icon: <ArrowRight className="text-purple-600" />,
+                          // },
                           // {
                           //   value: ApplicationStatus.ISSUED,
                           //   label: "Issue Permit",

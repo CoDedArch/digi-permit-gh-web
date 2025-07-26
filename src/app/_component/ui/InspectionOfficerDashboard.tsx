@@ -1,7 +1,7 @@
 import StatCard from "../StatCard";
 import InspectionCard from "../InspectionCard";
 import QuickActionCard from "../QuickActionCard";
-import { CalendarCheck, FileText, AlertCircle, Clock} from "lucide-react";
+import { CalendarCheck, FileText, AlertCircle, Clock, Users, User } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useInspectionStats } from "@/components/UseInspectorStats";
 import { useInspectorDashboardMap } from "@/components/UseInspectorDashboard";
@@ -29,15 +29,61 @@ export default function InspectionOfficerDashboard() {
       {/* Stats Cards Section */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <StatCard
-          title="Scheduled Today"
-          value={statsLoading ? "..." : stats?.scheduled_today?.toString() || "0"}
+          title="Inspections"
           icon={<CalendarCheck className="h-6 w-6 text-purple-600" />}
           loading={statsLoading}
-        />
+          customContent={
+            statsLoading ? (
+              <div className="text-xl font-bold">...</div>
+            ) : (
+              <div className="space-y-3">
+                {/* Scheduled Today - Inspector Only */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <div className="text-sm font-medium text-muted-foreground">
+                      Scheduled Today
+                    </div>
+                  </div>
+                  <div className="text-lg font-bold">
+                    {stats?.scheduled_today ?? 0}
+                  </div>
+                </div>
 
+                {/* Completed This Week - Dual Metrics */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 ml-6">
+                      <User className="h-3 w-3 text-muted-foreground" />
+                      <div className="text-xs font-medium text-muted-foreground">
+                        Your Completions
+                      </div>
+                    </div>
+                    <div className="text-base font-bold">
+                      {stats?.completed_week ?? 0}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 ml-6">
+                      <Users className="h-3 w-3 text-muted-foreground" />
+                      <div className="text-xs font-medium text-muted-foreground">
+                        MMDA Total
+                      </div>
+                    </div>
+                    <div className="text-base font-bold">
+                      {stats?.mmda_completed_week ?? 0}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          }
+        />
         <StatCard
           title="Pending Reports"
-          value={statsLoading ? "..." : stats?.pending_reports?.toString() || "0"}
+          value={
+            statsLoading ? "..." : stats?.pending_reports?.toString() || "0"
+          }
           icon={<FileText className="h-6 w-6 text-yellow-600" />}
           loading={statsLoading}
         />
@@ -50,11 +96,24 @@ export default function InspectionOfficerDashboard() {
             statsLoading ? (
               <div className="text-xl font-bold">...</div>
             ) : (
-              <div className="space-y-1">
-                <div className="text-2xl font-bold">
-                  {stats?.violations_found ?? 0}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-medium text-muted-foreground">
+                    Your Violations
+                  </div>
+                  <div className="text-lg font-bold">
+                    {stats?.inspector_violations ?? 0}
+                  </div>
                 </div>
-                <div className="text-sm text-muted-foreground">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-medium text-muted-foreground">
+                    MMDA Total
+                  </div>
+                  <div className="text-lg font-bold">
+                    {stats?.violations_found ?? 0}
+                  </div>
+                </div>
+                <div className="text-xs text-muted-foreground text-right">
                   Last 30 days
                 </div>
               </div>
@@ -63,25 +122,44 @@ export default function InspectionOfficerDashboard() {
         />
 
         <StatCard
-          title="Avg. Inspection Time"
-          value={
-            statsLoading
-              ? "..."
-              : `${stats?.avg_duration_hours?.toFixed(1) ?? "0"} hours`
-          }
-          subValue={
-            statsLoading
-              ? ""
-              : `${stats?.reinspection_rate ?? 0}% reinspection rate`
-          }
+          title="Inspection Duration"
           icon={<Clock className="h-6 w-6 text-blue-600" />}
           loading={statsLoading}
+          customContent={
+            statsLoading ? (
+              <div className="text-xl font-bold">...</div>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-medium text-muted-foreground">
+                    Your Avg
+                  </div>
+                  <div className="text-lg font-bold">
+                    {stats?.inspector_avg_duration?.toFixed(1) ?? "0"} days
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-medium text-muted-foreground">
+                    MMDA Avg
+                  </div>
+                  <div className="text-lg font-bold">
+                    {stats?.mmda_avg_duration?.toFixed(1) ?? "0"} days
+                  </div>
+                </div>
+                <div className="text-xs text-muted-foreground text-right">
+                  Last 30 days
+                </div>
+              </div>
+            )
+          }
         />
       </div>
 
       {/* Today's Inspection Schedule Section */}
       <div>
-        <h2 className="text-xl font-semibold mb-4">Today&apos;s Inspection Schedule</h2>
+        <h2 className="text-xl font-semibold mb-4">
+          Today&apos;s Inspection Schedule
+        </h2>
         <div className="space-y-4">
           {queueLoading ? (
             <div className="flex items-center justify-center py-8">
@@ -124,14 +202,14 @@ export default function InspectionOfficerDashboard() {
 
       {/* Quick Actions Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <QuickActionCard 
+        <QuickActionCard
           title="Submit Inspection Report"
           description="Complete and submit a site inspection report"
           icon={<FileText className="h-6 w-6" />}
           buttonText="Start Report"
           href="/reports"
         />
-        <QuickActionCard 
+        <QuickActionCard
           title="Report Violation"
           description="Document a building code violation"
           icon={<AlertCircle className="h-6 w-6" />}

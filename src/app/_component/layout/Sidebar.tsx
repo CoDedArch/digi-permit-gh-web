@@ -80,7 +80,9 @@ export default function Sidebar() {
                 {user?.role === "inspection_officer" && (
                   <>
                     <SiteVisitsIcon />
-                    <ViolationsIcon />
+                    <Link href={"/violations"}>
+                      <ViolationsIcon />
+                    </Link>
                   </>
                 )}
 
