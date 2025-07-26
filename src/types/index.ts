@@ -44,4 +44,9 @@ export interface ZoningDistrict {
   buffer_zones?: string;
 }
 
-
+export interface InspectionPhoto {
+  id?: number;
+  file_path: string;
+  inspection_id: number;
+  caption?: string;
+}

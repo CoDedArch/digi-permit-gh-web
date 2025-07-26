@@ -7,9 +7,13 @@ interface InspectionStats {
   violations_found: number;
   in_progress: number;
   completed_week: number;
+  mmda_avg_duration: number; // in days
+  inspector_avg_duration: number; // in days
   avg_duration_hours: number;
   reinspection_rate: number;
   total_inspections: number;
+  inspector_violations: number;
+  mmda_completed_week: number
 }
 
 export function useInspectionStats() {
@@ -19,9 +23,13 @@ export function useInspectionStats() {
     violations_found: 0,
     in_progress: 0,
     completed_week: 0,
+    mmda_avg_duration: 0,
+    inspector_avg_duration: 0,
     avg_duration_hours: 0,
     reinspection_rate: 0,
     total_inspections: 0,
+    inspector_violations: 0,
+    mmda_completed_week: 0
   });
 
   const [loading, setLoading] = useState(true);
